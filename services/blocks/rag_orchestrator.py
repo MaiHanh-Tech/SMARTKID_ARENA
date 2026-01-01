@@ -24,7 +24,7 @@ from services.blocks import knowledge_graph_v2 as kg_module
 from services.blocks import personal_rag_system as pr_module
 
 from services.blocks.ai_core import AI_Core
-from prompts import BOOK_ANALYSIS_PROMPT
+from services.blocks.prompts import BOOK_ANALYSIS_PROMPT
 
 # Translator (for translation orchestrator)
 try:
