@@ -94,9 +94,49 @@ class KnowledgeUniverse:
             books = [self.graph.nodes[nid]["title"] for nid in node_ids[-3:]]
             summary[layer] = {"count": len(node_ids), "recent": books}
         return summary
+        
     def detect_contradictions(self, threshold=0.8):
+        """
+        Tìm các cặp sách có nội dung giống nhau (sim > threshold)
+        NHƯNG thuộc các tầng tri thức đối lập nhau (Episteme Conflict).
+        """
         contradictions = []
+        # Định nghĩa các cặp tầng kiến thức thường có xung đột triết học
+        conflict_pairs = [
+            ("Vật lý & Sinh học", "Ý thức & Giải phóng"),  # Duy vật (Khoa học) vs Duy tâm (Tâm linh)
+            ("Toán học & Logic", "Văn hóa & Quyền lực")    # Chân lý tuyệt đối vs Chân lý tương đối (Xã hội)
+        ]
+
+        for layer_a, layer_b in conflict_pairs:
+            nodes_a = self.episteme_layers.get(layer_a, [])
+            nodes_b = self.episteme_layers.get(layer_b, [])
+
+            for id_a in nodes_a:
+                for id_b in nodes_b:
+                    # Bỏ qua nếu node không tồn tại trong graph
+                    if id_a not in self.graph.nodes or id_b not in self.graph.nodes:
+                        continue
+                        
+                    node_a = self.graph.nodes[id_a]
+                    node_b = self.graph.nodes[id_b]
+                    
+                    # Tính độ tương đồng
+                    sim = cosine_similarity([node_a["embedding"]], [node_b["embedding"]])[0][0]
+                    
+                    if sim > threshold:
+                        contradictions.append({
+                            "book_1": node_a["title"],
+                            "book_2": node_b["title"],
+                            "similarity": float(sim),
+                            "tension": f"{layer_a} ⚡ {layer_b}",
+                            "explanation": "Cùng chủ đề nhưng khác hệ quy chiếu triết học (Episteme Conflict)."
+                        })
+        
+        # Sắp xếp theo độ mâu thuẫn giảm dần
+        contradictions.sort(key=lambda x: x["similarity"], reverse=True)
         return contradictions
+    
+    
     def export_for_visualization(self):
         nodes = []
         edges = []
