@@ -73,7 +73,7 @@ def analyze_document_streamlit(title: str, text: str, user_lang: str = "vi", max
     try:
         ai = AI_Core()
         content = text[:max_chars]
-        # Tính hash theo MD5 như mô tả trong docstring của analyze_static
+        # Tính MD5 hash theo docstring của analyze_static để cache hoạt động đúng
         text_hash = hashlib.md5(content.encode("utf-8")).hexdigest()
         # Gọi đúng signature: (text_hash, text, instruction)
         return ai.analyze_static(text_hash, content, BOOK_ANALYSIS_PROMPT)
