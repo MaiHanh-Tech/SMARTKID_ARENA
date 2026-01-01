@@ -180,15 +180,22 @@ class AI_Core:
         # --- NEW: Log detailed last_errors for debugging ---
         try:
             if hasattr(self, "logger"):
-                self.logger.log_error("Generate_Final_Errors", error_summary, str(last_errors))
+                self.logger.log_error("Generate_Final_Errors", error_summary, repr(last_errors))
         except Exception:
             pass
 
+        # Nếu đang bật debug trong secrets (tạm thời), trả về chi tiết lỗi để debug trên UI
+        if st.secrets.get("debug_ai", False):
+             # Trả về debug chi tiết (TEMP): hiển thị error_summary + toàn bộ last_errors
+            return f"DEBUG ERRORS:\n{error_summary}\nALL: {repr(last_errors)}"
+
+        # Mặc định: trả về thông báo thân thiện
         return (
             "⚠️ Hệ thống đang bận hoặc gặp lỗi:\n"
             f"{error_summary}\n\n"
             "💡 Vui lòng thử lại sau 1 phút."
         )
+
 
     @staticmethod
     @st.cache_data(show_spinner=False, ttl=3600)
