@@ -176,7 +176,15 @@ class AI_Core:
 
         # Nếu thử hết các model mà vẫn lỗi
         error_summary = "\n".join(f"- {e}" for e in last_errors[-3:])
-        return f"⚠️ Hệ thống đang bận hoặc gặp lỗi:\n{error_summary}\n\n💡 Vui lòng thử lại sau 1 phút."
+
+        # --- NEW: Log detailed last_errors for debugging ---
+        try:
+            if hasattr(self, "logger"):
+                self.logger.log_error("Generate_Final_Errors", error_summary, str(last_errors))
+        except Exception:
+            pass
+
+        return f"⚠️ Hệ thống đang bận hoặc gặp lỗi:\n{error_summary}\n\n💡 Vui lòng thử lại sau 1 phút."lại sau 1 phút."
 
     @staticmethod
     @st.cache_data(show_spinner=False, ttl=3600)
