@@ -134,20 +134,25 @@ def check_model_available():
 def doc_file_safe(uploaded_file):
     return doc_file(uploaded_file)
 
+# Helper to get or init KnowledgeUniverse without creating a local-name conflict
+def get_knowledge_universe():
+    kg_instance = st.session_state.get("knowledge_universe", None)
+    if kg_instance is not None:
+        return kg_instance
+    try:
+        kg_instance = init_knowledge_universe()
+        st.session_state["knowledge_universe"] = kg_instance
+        return kg_instance
+    except Exception:
+        return None
+
 # --- RUN ---
 def run():
     ai = AI_Core()
     voice = Voice_Engine()
 
-    # --- Minimal safe init for Knowledge Graph to avoid UnboundLocalError ---
-    kg = st.session_state.get("knowledge_universe", None)
-    if kg is None:
-        try:
-            kg = init_knowledge_universe()
-            st.session_state["knowledge_universe"] = kg
-        except Exception:
-            kg = None
-    # --- end safe init ---
+    # initialize/kg early via helper (guaranteed before any reference)
+    kg = get_knowledge_universe()
 
     with st.sidebar:
         st.markdown("---")
@@ -205,14 +210,8 @@ def run():
                     except Exception as e:
                         st.warning(f"Không thể tính similarity: {e}")
 
-                # Ensure kg is the session instance (re-check before heavy ops)
-                kg = st.session_state.get("knowledge_universe", kg)
-                if kg is None:
-                    try:
-                        kg = init_knowledge_universe()
-                        st.session_state["knowledge_universe"] = kg
-                    except Exception:
-                        kg = None
+                # Re-check KG via helper (safe, no UnboundLocalError)
+                kg = get_knowledge_universe()
 
                 # Safe call: only call methods on kg if available
                 try:
