@@ -1,5 +1,5 @@
 import json
-from ai_core import AI_Core
+from services.blocks.ai_core import AI_Core
 
 class ArgumentAnalyzer:
     FALLACIES = {
