@@ -1,13 +1,28 @@
 # services.blocks package initializer
 # Import common helpers here if you want to expose them at package level
 __all__ = [
-    "db_block",
-    "file_processor",
-    "embedding_engine",
-    "html_generator",
+    "ai_core",
+    "argument_analyzer",
+    "auth_block",
     "cfo_data_manager",
-    "rag_orchestrator",
-    "translation_orchestrator",
+    "collaborative_debate",
+    "config"
+    "db_block",
+    "embedding_engine",
+    "file_processor",
+    "html_generator",
     "knowledge_graph_v2",
-    "personal_rag_system"
+    "logger",
+    "module_cfo",
+    "module_translator",
+    "module_weaver",
+    "personal_rag_system",
+    "prompts",
+    "rag_orchestrator",
+    "reading_tracker",
+    "service_locator",
+    "translate_book",
+    "translation_orchestrator",
+    "translator",
+    "voice_block"
 ]
