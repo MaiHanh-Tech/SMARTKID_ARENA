@@ -23,6 +23,7 @@ except ImportError:
 from ai_core import AI_Core
 from voice_block import Voice_Engine
 from prompts import DEBATE_PERSONAS, BOOK_ANALYSIS_PROMPT
+from knowledge_graph_v2 import init_knowledge_universe, upgrade_existing_database
 
 # ==========================================
 # 🌍 KẾT NỐI SUPABASE (Thay thế Google Sheet)
@@ -338,7 +339,25 @@ def run():
                     else:
                         st.error(f"❌ Không thể phân tích file {f.name}: {res}")
         
+
+        # Line ~260: Trong TAB 1, sau khi load Excel
+        if file_excel:
+            kg = init_knowledge_universe()
+            kg = upgrade_existing_database(file_excel, kg)
     
+            # Hiển thị Episteme summary
+            with st.expander("🌌 Tổng quan Vũ trụ Tri thức"):
+                summary = kg.get_episteme_summary()
+                for layer, data in summary.items():
+                    st.write(f"**{layer}**: {data['count']} cuốn")
+                    st.caption(f"Gần đây: {', '.join(data['recent'])}")
+    
+        # Khi phân tích file mới, dùng kg.find_related_books()
+        related = kg.find_related_books(text[:2000], top_k=3)
+        for node_id, title, sim, explanation in related:
+            st.write(f"- {title} ({sim*100:.0f}%) | {explanation}")
+
+        
         # Graph
         if file_excel:
             try:
