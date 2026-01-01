@@ -24,3 +24,4 @@ pypinyin
 jieba
 groq
 supabase
+torch
