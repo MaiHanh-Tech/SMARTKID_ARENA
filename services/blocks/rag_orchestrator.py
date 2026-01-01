@@ -23,7 +23,7 @@ from services.blocks.embedding_engine import load_encoder, encode_texts
 from services.blocks import knowledge_graph_v2 as kg_module
 from services.blocks import personal_rag_system as pr_module
 
-from ai_core import AI_Core
+from services.blocks.ai_core import AI_Core
 from prompts import BOOK_ANALYSIS_PROMPT
 
 # Translator (for translation orchestrator)
