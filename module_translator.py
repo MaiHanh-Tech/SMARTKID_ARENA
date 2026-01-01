@@ -1,6 +1,6 @@
 """
 MODULE TRANSLATOR - Giao diện dịch thuật
-Version: Final (Merged best of both)
+Version: Final (FIXED - Sửa lỗi import)
 """
 
 import streamlit as st
@@ -10,14 +10,14 @@ from typing import Optional
 
 # ===== IMPORTS BLOCKS (with fallback) =====
 try:
-    from blocks.translation_orchestrator import get_translation_orchestrator
-    HAS_ORCHESTRATOR = True
+    from services.blocks.rag_orchestrator import get_translation_orchestrator
+    HAS_ORCHESTRATOR = True  # ✅ FIX 1: Thêm dòng này
 except ImportError:
     HAS_ORCHESTRATOR = False
-    st.warning("⚠️ Chưa có translation_orchestrator. Dùng chế độ fallback.")
+    # Chạy yên lặng, không warning
 
 try:
-    from blocks.text_processor import get_text_processor
+    from services.blocks.text_processor import get_text_processor  # ✅ FIX 2: Sửa path
     HAS_TEXT_PROCESSOR = True
 except ImportError:
     HAS_TEXT_PROCESSOR = False
@@ -252,19 +252,16 @@ Text:
             with st.expander("🔍 Xem trước HTML (Click để mở)", expanded=True):
                 components.html(html_output, height=600, scrolling=True)
             
-            # ========== SAVE HISTORY (Optional) ==========
+            # ========== SAVE HISTORY (Optional) =====
             try:
-                from blocks.db_block import get_db
-                db = get_db()
-                
-                db.save_log(
-                    user=st.session_state.get("current_user", "Unknown"),
-                    log_type="Dịch Thuật",
-                    title=f"{source_lang} → {target_lang} ({style})",
-                    content=text_input[:500]  # Save first 500 chars
+                from services.blocks.rag_orchestrator import store_history
+                store_history(
+                    "Dịch Thuật",
+                    f"{source_lang} → {target_lang} ({style})",
+                    text_input[:500]
                 )
             except Exception:
-                # History saving is optional, don't break on error
+                # History saving is optional
                 pass
         
         except Exception as e:
