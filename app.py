@@ -1,15 +1,26 @@
 import streamlit as st
+import sys
+import os
 
-# 1. CẤU HÌNH TRANG
+# --- CẤU HÌNH ĐƯỜNG DẪN (QUAN TRỌNG) ---
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
+# 1. IMPORT CÁC MODULE TỪ THƯ MỤC BLOCKS
+try:
+    from services.blocks import module_weaver
+    from services.blocks import module_cfo
+    from services.blocks import module_translator
+    from services.blocks.auth_block import AuthBlock # Import class AuthBlock trực tiếp
+except ImportError as e:
+    st.error(f"❌ Lỗi cấu trúc file: Không tìm thấy module trong 'services/blocks/'.\nChi tiết: {e}")
+    st.stop()
+
+# 2. CẤU HÌNH TRANG
 st.set_page_config(page_title="Cognitive Weaver", layout="wide", page_icon="🏢")
 
-# 2. LOAD AUTH (CORE)
+# 3. KHỞI TẠO AUTH
 try:
-    from auth_block import AuthBlock
     auth = AuthBlock()
-except ImportError:
-    st.error("❌ Thiếu file 'auth_block.py'. Hãy tạo file này trước!")
-    st.stop()
 except Exception as e:
     st.error(f"❌ Lỗi khởi tạo Auth: {e}")
     st.stop()
@@ -23,7 +34,7 @@ def safe_run_module(module_func, module_name):
         st.exception(e)
         st.info("💡 Hãy reload trang hoặc chọn module khác")
 
-# 3. LOGIN UI
+# 4. LOGIN UI
 if 'user_logged_in' not in st.session_state:
     st.session_state.user_logged_in = False
 
@@ -38,21 +49,22 @@ if not st.session_state.user_logged_in:
                 st.rerun()
             else:
                 st.error("❌ Sai mật khẩu!")
-                attempts = st.session_state.get('login_attempts', {}).get('global', [])
-                remaining = 5 - len(attempts)
-                if remaining > 0:
-                    st.warning(f"⚠️ Còn {remaining} lần thử")
+                # Logic đếm số lần thử đã có trong auth_block mới, 
+                # hiển thị cảnh báo từ đó hoặc xử lý đơn giản ở đây
     st.stop()
 
-# 4. SIDEBAR & NAVIGATION
+# 5. SIDEBAR & NAVIGATION
 with st.sidebar:
     st.title("🗂️ DANH MỤC ỨNG DỤNG")
-    st.info(f"👤 Xin chào: **{st.session_state.current_user}**")
+    user_name = st.session_state.get('current_user', 'User')
+    st.info(f"👤 Xin chào: **{user_name}**")
+    
     app_choice = st.radio("Chọn công việc:", [
         "💰 1. Cognitive Weaver (Sách & Graph)",
         "🌏 2. AI Translator (Dịch thuật)",
         "🧠 3. CFO Controller (Tài chính)"
     ])
+    
     st.divider()
     if st.button("Đăng Xuất"):
         st.session_state.user_logged_in = False
@@ -62,41 +74,44 @@ with st.sidebar:
     if st.session_state.get("is_admin"):
         st.divider()
         st.write("👑 **Admin Panel**")
-        try:
-            all_users = auth.get_all_users()
-            if all_users:
-                import pandas as pd
-                df_users = pd.DataFrame(all_users)
-                display_cols = [col for col in ['username', 'role', 'is_active', 'created_at'] if col in df_users.columns]
-                st.dataframe(df_users[display_cols], hide_index=True)
-            with st.expander("Quản lý Người dùng"):
-                new_u = st.text_input("Username:")
-                new_p = st.text_input("Password:", type="password")
+        with st.expander("Quản lý Người dùng"):
+            try:
+                all_users = auth.get_all_users()
+                if all_users:
+                    import pandas as pd
+                    df_users = pd.DataFrame(all_users)
+                    # Lọc cột hiển thị cho gọn
+                    cols = [c for c in ['username', 'role', 'created_at'] if c in df_users.columns]
+                    st.dataframe(df_users[cols], hide_index=True)
+                
+                st.write("---")
+                new_u = st.text_input("Username mới:")
+                new_p = st.text_input("Password mới:", type="password")
                 new_role = st.selectbox("Role:", ["user", "admin"])
                 if st.button("Tạo User"):
                     if new_u and new_p:
                         ok, msg = auth.create_user(new_u, new_p, new_role)
                         if ok:
-                            st.success(msg); st.rerun()
+                            st.success(msg)
+                            time.sleep(1) # Đợi 1s để đọc thông báo
+                            st.rerun()
                         else:
                             st.error(msg)
-        except Exception:
-            st.warning("Không thể tải danh sách user từ DB")
+            except Exception as e:
+                st.warning(f"Lỗi Admin Panel: {e}")
 
-# 5. LOAD UI MODULES AN TOÀN
+# 6. LOAD UI MODULES (Sử dụng biến đã import ở trên đầu)
 try:
     if app_choice == "💰 1. Cognitive Weaver (Sách & Graph)":
-        import module_weaver as mw
-        safe_run_module(mw.run, "Cognitive Weaver")
+        # Không cần import lại, dùng trực tiếp biến module_weaver đã import ở dòng 10
+        safe_run_module(module_weaver.run, "Cognitive Weaver")
+        
     elif app_choice == "🌏 2. AI Translator (Dịch thuật)":
-        import module_translator as mt
-        safe_run_module(mt.run, "AI Translator")
+        safe_run_module(module_translator.run, "AI Translator")
+        
     elif app_choice == "🧠 3. CFO Controller (Tài chính)":
-        import module_cfo as mc
-        safe_run_module(mc.run, "CFO Controller")
-except ImportError as e:
-    st.error(f"⚠️ Lỗi: Không tìm thấy module tương ứng!\nChi tiết: {e}")
-    st.info("👉 Hãy đảm bảo đã có các file UI: module_cfo.py, module_translator.py, module_weaver.py")
+        safe_run_module(module_cfo.run, "CFO Controller")
+        
 except Exception as e:
-    st.error(f"❌ Lỗi nghiêm trọng: {e}")
+    st.error(f"❌ Lỗi chạy module: {e}")
     st.exception(e)
