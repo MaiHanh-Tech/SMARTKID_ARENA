@@ -1,25 +1,22 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from services.blocks.file_processor import doc_file, clean_pdf_text
-from services.blocks.embedding_engine import load_encoder, encode_texts
+from services.blocks.file_processor import doc_file
+from services.blocks.embedding_engine import load_encoder
 from services.blocks.html_generator import load_template, create_html_block, create_interactive_html_block
-from services.blocks.rag_orchestrator import analyze_document_streamlit, compute_similarity_with_excel, store_history, init_knowledge_universe, create_personal_rag
+from services.blocks.rag_orchestrator import analyze_document_streamlit, compute_similarity_with_excel, store_history, init_knowledge_universe, create_personal_rag, tai_lich_su
 from ai_core import AI_Core
 from voice_block import Voice_Engine
 from prompts import DEBATE_PERSONAS, BOOK_ANALYSIS_PROMPT
 import time
 
-# ✅ IMPORT SUPABASE
+# ✅ IMPORT SUPABASE (không raise nếu thiếu)
 try:
     from supabase import create_client, Client
 except ImportError:
-    # Không raise error trực tiếp để app vẫn chạy các phần khác
-    st.error("⚠️ Thiếu thư viện supabase. Hãy thêm 'supabase' vào requirements.txt")
+    pass
 
-# ==========================================
-# 🌍 BỘ TỪ ĐIỂN ĐA NGÔN NGỮ (giữ nguyên)
-# ==========================================
+# TRANSLATIONS / UI TEXT
 TRANS = {
     "vi": {
         "lang_select": "Ngôn ngữ / Language / 语言",
@@ -34,7 +31,7 @@ TRANS = {
         "t1_btn": "🚀 PHÂN TÍCH NGAY",
         "t1_analyzing": "Đang phân tích {name}...",
         "t1_connect_ok": "✅ Đã kết nối {n} cuốn sách.",
-        "t1_graph_title": "🪐 Vũ Trụ Sách",
+        "t1_graph_title": "🪐 Vũ trụ Sách",
         "t2_header": "Dịch Thuật Đa Chiều",
         "t2_input": "Nhập văn bản cần dịch:",
         "t2_target": "Dịch sang:",
@@ -119,13 +116,12 @@ def T(key):
     lang = st.session_state.get('weaver_lang', 'vi')
     return TRANS.get(lang, TRANS['vi']).get(key, key)
 
-# --- CÁC HÀM PHỤ TRỢ (giữ nguyên, nhẹ) ---
 @st.cache_resource
 def load_models():
     try:
         model = load_encoder()
         return model
-    except Exception as e:
+    except Exception:
         return None
 
 def check_model_available():
@@ -142,6 +138,16 @@ def doc_file_safe(uploaded_file):
 def run():
     ai = AI_Core()
     voice = Voice_Engine()
+
+    # --- Minimal safe init for Knowledge Graph to avoid UnboundLocalError ---
+    kg = st.session_state.get("knowledge_universe", None)
+    if kg is None:
+        try:
+            kg = init_knowledge_universe()
+            st.session_state["knowledge_universe"] = kg
+        except Exception:
+            kg = None
+    # --- end safe init ---
 
     with st.sidebar:
         st.markdown("---")
@@ -199,17 +205,16 @@ def run():
                     except Exception as e:
                         st.warning(f"Không thể tính similarity: {e}")
 
-                # --- SAFE INIT: Knowledge Graph (tránh UnboundLocalError) ---
-                kg = st.session_state.get("knowledge_universe", None)
+                # Ensure kg is the session instance (re-check before heavy ops)
+                kg = st.session_state.get("knowledge_universe", kg)
                 if kg is None:
                     try:
                         kg = init_knowledge_universe()
                         st.session_state["knowledge_universe"] = kg
-                    except Exception as e:
-                        st.warning(f"Knowledge Graph chưa khởi tạo: {e}")
+                    except Exception:
                         kg = None
 
-                # Lấy sách liên quan nếu KG khả dụng
+                # Safe call: only call methods on kg if available
                 try:
                     related = kg.find_related_books(text[:2000], top_k=3) if kg else []
                 except Exception as e:
@@ -220,13 +225,10 @@ def run():
                     res = analyze_document_streamlit(f.name, text, user_lang=st.session_state.get('weaver_lang', 'vi'))
                     if res and "Lỗi" not in res:
                         st.markdown(f"### 📄 {f.name}")
-                        # Hiển thị link sách liên quan (nếu có)
                         if link:
                             st.markdown("**Sách có liên quan (từ Excel):**")
                             st.markdown(link)
-                        # Hiển thị kết quả phân tích
                         st.markdown(res)
-                        # Nếu có KG liên quan, hiển thị tóm tắt
                         if related:
                             st.markdown("**Sách liên quan từ Knowledge Graph:**")
                             for node_id, title, score, explanation in related:
@@ -236,7 +238,47 @@ def run():
                     else:
                         st.error(f"❌ Không thể phân tích file {f.name}: {res}")
 
-    # === TAB 2: DỊCH GIẢ ===
+        # Graph visualization when Excel provided
+        if file_excel:
+            try:
+                if "df_viz" not in st.session_state:
+                    st.session_state.df_viz = pd.read_excel(file_excel).dropna(subset=["Tên sách"])
+                df_v = st.session_state.df_viz
+
+                with st.expander(T("t1_graph_title"), expanded=False):
+                    vec_local = load_models()
+                    if vec_local is None:
+                        st.warning("⚠️ Encoder không tải được, bỏ qua đồ thị.")
+                    else:
+                        if "book_embs" not in st.session_state:
+                            with st.spinner("Đang số hóa sách..."):
+                                st.session_state.book_embs = vec_local.encode(df_v["Tên sách"].tolist())
+                        embs = st.session_state.book_embs
+                        sim = np.array([])  # fallback
+                        try:
+                            from sklearn.metrics.pairwise import cosine_similarity
+                            sim = cosine_similarity(embs)
+                        except Exception:
+                            sim = np.zeros((len(embs), len(embs)))
+                        nodes, edges = [], []
+                        total_books = len(df_v)
+                        c_slider1, c_slider2 = st.columns(2)
+                        with c_slider1:
+                            max_nodes = st.slider("Số lượng sách hiển thị:", 5, total_books, min(50, total_books))
+                        with c_slider2:
+                            threshold = st.slider("Độ tương đồng nối dây:", 0.0, 1.0, 0.45)
+                        from streamlit_agraph import agraph, Node, Edge, Config
+                        for i in range(min(max_nodes, total_books)):
+                            nodes.append(Node(id=str(i), label=df_v.iloc[i]["Tên sách"], size=20, color="#FFD166"))
+                            for j in range(i+1, min(max_nodes, total_books)):
+                                if sim.size and sim[i, j] > threshold:
+                                    edges.append(Edge(source=str(i), target=str(j), color="#118AB2"))
+                        config = Config(width=900, height=600, directed=False, physics=True, collapsible=False)
+                        agraph(nodes, edges, config)
+            except Exception:
+                pass
+
+    # TAB 2: Dịch giả
     with tab2:
         st.subheader(T("t2_header"))
         txt = st.text_area(T("t2_input"), height=150, key="w_t2_inp")
@@ -252,7 +294,7 @@ def run():
                 st.markdown(res)
                 store_history("Dịch Thuật", f"{target_lang}", txt[:50])
 
-    # === TAB 3: ĐẤU TRƯỜNG ===
+    # TAB 3: Đấu trường
     with tab3:
         st.subheader(T("t3_header"))
         mode = st.radio("Mode:", ["👤 Solo", "⚔️ Multi-Agent"], horizontal=True, key="w_t3_mode")
@@ -350,7 +392,7 @@ def run():
                 full_log = "\n\n".join(full_transcript)
                 store_history("Hội Đồng Tranh Biện", f"Chủ đề: {topic}", full_log)
 
-    # === TAB 4: PHÒNG THU ===
+    # TAB 4: PHÒNG THU
     with tab4:
         st.subheader(T("t4_header"))
         inp_v = st.text_area("Text:", height=200)
@@ -360,18 +402,18 @@ def run():
             if path:
                 st.audio(path)
 
-    # === TAB 5: NHẬT KÝ (CÓ PHẦN BAYES) ===
+    # TAB 5: NHẬT KÝ (CÓ PHẦN BAYES)
     with tab5:
         st.subheader("⏳ Nhật Ký & Phản Chiếu Tư Duy")
         if st.button("🔄 Tải lại", key="w_t5_refresh"):
-            from services.blocks.rag_orchestrator import DBBlock, tai_lich_su
-            db = DBBlock()
             st.session_state.history_cloud = tai_lich_su()
             st.rerun()
 
-        data = st.session_state.get("history_cloud", [])
+        data = st.session_state.get("history_cloud", tai_lich_su())
+
         if data:
             df_h = pd.DataFrame(data)
+
             if "SentimentScore" in df_h.columns:
                 try:
                     df_h["score"] = pd.to_numeric(df_h["SentimentScore"], errors='coerce').fillna(0)
@@ -383,10 +425,12 @@ def run():
 
             with st.expander("🔮 Phân tích Tư duy theo xác suất Bayes (E.T. Jaynes)", expanded=False):
                 st.info("AI sẽ coi Lịch sử hoạt động của chị là 'Dữ liệu quan sát' (Evidence) để suy luận ra 'Hàm mục tiêu' (Objective Function) và sự dịch chuyển niềm tin của chị.")
+
                 if st.button("🧠 Chạy Mô hình Bayes ngay"):
                     with st.spinner("Đang tính toán xác suất hậu nghiệm (Posterior)..."):
                         recent_logs = df_h.tail(10).to_dict(orient="records")
                         logs_text = pd.io.json.dumps(recent_logs, ensure_ascii=False)
+
                         bayes_prompt = f"""
                         Đóng vai một nhà khoa học tư duy theo trường phái E.T. Jaynes (sách 'Probability Theory: The Logic of Science').
 
@@ -402,6 +446,7 @@ def run():
 
                         Trả lời ngắn gọn, sâu sắc, dùng thuật ngữ xác suất nhưng dễ hiểu.
                         """
+
                         analysis = ai.generate(bayes_prompt, model_type="pro")
                         st.markdown(analysis)
 
@@ -411,11 +456,13 @@ def run():
                 tp = str(item.get('Type', ''))
                 ti = str(item.get('Title', ''))
                 ct = str(item.get('Content', ''))
+
                 icon = "📝"
                 if "Tranh Biện" in tp:
                     icon = "🗣️"
                 elif "Dịch" in tp:
                     icon = "✍️"
+
                 with st.expander(f"{icon} {t} | {tp} | {ti}"):
                     st.markdown(ct)
         else:
