@@ -6,7 +6,7 @@ __all__ = [
     "auth_block",
     "cfo_data_manager",
     "collaborative_debate",
-    "config"
+    "config",
     "db_block",
     "embedding_engine",
     "file_processor",
