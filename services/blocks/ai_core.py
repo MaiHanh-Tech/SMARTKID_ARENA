@@ -3,8 +3,13 @@ import streamlit as st
 import time
 from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable, InternalServerError, InvalidArgument
 
+# 👇 IMPORT MỚI: Config và Logger từ thư mục blocks
+from services.blocks.config import AppConfig
+from services.blocks.logger import AppLogger
+
 class AI_Core:
     def __init__(self):
+        self.logger = AppLogger() # ✅ Khởi tạo Logger
         self.api_ready = False
         try:
             # Kiểm tra key tồn tại trước khi lấy
@@ -14,6 +19,7 @@ class AI_Core:
                 self.api_ready = True
             else:
                 st.error("⚠️ Chưa cấu hình API Key trong secrets.toml")
+                self.logger.log_error("AI_Core", "Missing API Key", "") # ✅ Log lỗi
                 return
 
             # Cấu hình Safety (Chặn nội dung độc hại)
@@ -27,12 +33,13 @@ class AI_Core:
             # Cấu hình Quota Monitor (Theo yêu cầu B)
             self.quota_tracker = {
                 "daily_calls": 0,
-                "daily_limit": 1500,  # Free tier limit
+                "daily_limit": AppConfig.API_LIMITS["gemini_daily"], # ✅ Lấy từ Config
                 "cost_estimate": 0.0
             }
 
         except Exception as e:
             st.error(f"❌ Lỗi khởi tạo AI Core: {e}")
+            self.logger.log_error("AI_Core_Init", str(e), "") # ✅ Log lỗi
 
     # Cấu hình Generation Config (Theo yêu cầu A)
     def _get_gen_config(self, task_type="general"):
@@ -61,15 +68,11 @@ class AI_Core:
 
     def _get_model(self, model_name, system_instr=None, task_type="general"):
         """Hàm helper để khởi tạo model đúng phiên bản"""
-        # ✅ DANH SÁCH MODEL MỚI NHẤT (Cập nhật 2025)
-        valid_names = {
-            "flash": "gemini-2.5-flash",         # Nhanh, rẻ
-            "pro": "gemini-2.5-pro",             # Thông minh nhất (Dùng cho tranh biện)
-            "exp": "gemini-2.5-flash-lite"        # Bản thử nghiệm
-        }
+        # ✅ DANH SÁCH MODEL TỪ CONFIG
+        valid_names = AppConfig.GEMINI_MODELS
         
         # Mặc định fallback về 2.5 Flash nếu tên sai
-        target_name = valid_names.get(model_name, "gemini-2.5-flash")
+        target_name = valid_names.get(model_name, valid_names["flash"])
         
         try:
             return genai.GenerativeModel(
@@ -86,6 +89,8 @@ class AI_Core:
         """
         Hàm gọi AI chính: Tự động chuyển model nếu lỗi (Fallback Strategy)
         """
+        start_time = time.time() # ✅ Bắt đầu đo thời gian
+
         if not self.api_ready:
             return "⚠️ API Key chưa sẵn sàng."
 
@@ -125,6 +130,10 @@ class AI_Core:
                         token_count = response.usage_metadata.total_token_count
                     self._track_usage(m_name, token_count)
                     
+                    # ✅ Log thành công
+                    latency = time.time() - start_time
+                    self.logger.log_api_call(m_type, token_count or len(prompt), latency, True)
+                    
                     return response.text
                 
                 # Xử lý các lý do bị chặn (Safety, Token...)
@@ -147,6 +156,7 @@ class AI_Core:
                 quota_exhausted_count += 1
                 error_msg = f"{m_name}: Hết Quota (429)"
                 last_errors.append(error_msg)
+                self.logger.log_error("Generate", error_msg, "") # ✅ Log lỗi
                 time.sleep(base_wait_time * quota_exhausted_count)
                 
             except (ServiceUnavailable, InternalServerError):
@@ -156,10 +166,12 @@ class AI_Core:
             
             except InvalidArgument as e:
                 # Lỗi Input -> Dừng luôn, không thử lại
+                self.logger.log_error("Generate", f"Invalid Argument: {str(e)}", "") # ✅ Log lỗi
                 return f"⚠️ Lỗi Input (Prompt không hợp lệ): {str(e)[:200]}"
                 
             except Exception as e:
                 last_errors.append(f"{m_name}: Lỗi lạ ({str(e)[:50]})")
+                self.logger.log_error("Generate", f"Exception: {str(e)}", "") # ✅ Log lỗi
                 time.sleep(1)
 
         # Nếu thử hết các model mà vẫn lỗi
