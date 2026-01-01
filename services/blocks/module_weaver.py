@@ -345,7 +345,7 @@ def run():
 
     st.header(f"🧠 The Cognitive Weaver")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([T("tab1"), T("tab2"), T("tab3"), T("tab4"), T("tab5")])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([T("tab1"), T("tab2"), T("tab3"), T("tab4"), T("tab5"),"📖 Reading Tracker"])
 
     # TAB 1: RAG
     with tab1:
