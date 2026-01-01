@@ -2,6 +2,11 @@ from pypdf import PdfReader
 from docx import Document
 import re
 import pypinyin
+import pandas as pd 
+try:
+    from pptx import Presentation
+except ImportError:
+    Presentation = None
 
 def doc_file(uploaded_file):
     if not uploaded_file: return ""
@@ -10,13 +15,36 @@ def doc_file(uploaded_file):
         if ext == "pdf":
             reader = PdfReader(uploaded_file)
             return "\n".join([page.extract_text() or "" for page in reader.pages])
+        
         elif ext == "docx":
             doc = Document(uploaded_file)
             return "\n".join([p.text for p in doc.paragraphs])
-        elif ext in ["txt", "md", "html"]:
+            
+        elif ext in ["txt", "md", "html", "py", "json"]:
             return str(uploaded_file.read(), "utf-8")
-    except:
-        return ""
+            
+        elif ext in ["xlsx", "xls"]:
+            df = pd.read_excel(uploaded_file)
+            return df.to_string(index=False)
+            
+        elif ext == "csv":
+            df = pd.read_csv(uploaded_file)
+            return df.to_string(index=False)
+
+        elif ext == "pptx":
+            if Presentation:
+                prs = Presentation(uploaded_file)
+                text_runs = []
+                for slide in prs.slides:
+                    for shape in slide.shapes:
+                        if hasattr(shape, "text"):
+                            text_runs.append(shape.text)
+                return "\n".join(text_runs)
+            else:
+                return "[Lỗi: Chưa cài thư viện python-pptx]"
+
+    except Exception as e:
+        return f"" # Trả về rỗng nếu lỗi đọc file
     return ""
 
 def clean_pdf_text(text):
