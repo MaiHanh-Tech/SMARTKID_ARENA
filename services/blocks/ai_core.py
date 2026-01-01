@@ -184,7 +184,11 @@ class AI_Core:
         except Exception:
             pass
 
-        return f"⚠️ Hệ thống đang bận hoặc gặp lỗi:\n{error_summary}\n\n💡 Vui lòng thử lại sau 1 phút."lại sau 1 phút."
+        return (
+            "⚠️ Hệ thống đang bận hoặc gặp lỗi:\n"
+            f"{error_summary}\n\n"
+            "💡 Vui lòng thử lại sau 1 phút."
+        )
 
     @staticmethod
     @st.cache_data(show_spinner=False, ttl=3600)
