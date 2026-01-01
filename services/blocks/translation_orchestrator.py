@@ -1,4 +1,4 @@
-from translate_book import translate_file, create_interactive_html_block
+from services.blocks.translate_book import translate_file, create_interactive_html_block
 from html import escape
 
 def translate_document(text, progress_callback=None, include_english=True, source_lang="Chinese", target_lang="Vietnamese", mode="Standard Translation", processed_words=None):
