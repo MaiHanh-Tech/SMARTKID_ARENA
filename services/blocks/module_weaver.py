@@ -500,10 +500,12 @@ def run():
                 full_log = "\n\n".join(full_transcript)
                 store_history("Hội Đồng Tranh Biện", f"Chủ đề: {topic}", full_log)
 
-        # 👇 4. PHÂN TÍCH LOGIC (Đã sửa lỗi thụt lề, đưa ra ngoài khối if/else)
+        # 👇 PHẦN PHÂN TÍCH LOGIC & NGỤY BIỆN
+        # (Đặt ở đây để luôn hiển thị, không phụ thuộc vào mode Solo/Multi)
         st.divider()
         st.markdown("### 🧠 Phân Tích Logic & Ngụy Biện")
         arg_text = st.text_area("Nhập đoạn lập luận cần kiểm tra:", height=100)
+        
         if st.button("🔍 Phân tích Lập luận"):
             ana = ArgumentAnalyzer()
             res = ana.analyze_argument(arg_text)
