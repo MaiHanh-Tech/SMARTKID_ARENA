@@ -24,18 +24,42 @@ class AI_Core:
                 {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
             ]
             
-            # Cấu hình Generation Config (Tối ưu cho 2.5 Pro)
-            self.gen_config = genai.GenerationConfig(
-                temperature=0.8,
-                max_output_tokens= 500,  
-                top_p=0.95,
-                top_k=40
-            )
+            # Cấu hình Quota Monitor (Theo yêu cầu B)
+            self.quota_tracker = {
+                "daily_calls": 0,
+                "daily_limit": 1500,  # Free tier limit
+                "cost_estimate": 0.0
+            }
 
         except Exception as e:
             st.error(f"❌ Lỗi khởi tạo AI Core: {e}")
 
-    def _get_model(self, model_name, system_instr=None):
+    # Cấu hình Generation Config (Theo yêu cầu A)
+    def _get_gen_config(self, task_type="general"):
+        configs = {
+            "debate": {"temperature": 0.9, "max_tokens": 2048},
+            "translation": {"temperature": 0.3, "max_tokens": 4096},
+            "book_analysis": {"temperature": 0.7, "max_tokens": 8192},
+            "general": {"temperature": 0.8, "max_tokens": 1024}
+        }
+        return genai.GenerationConfig(**configs.get(task_type, configs["general"]))
+
+    # Track usage (Theo yêu cầu B)
+    def _track_usage(self, model_name, tokens_used):
+        """Track API usage để tránh vượt quota"""
+        self.quota_tracker["daily_calls"] += 1
+        
+        # Gemini pricing (example)
+        cost_per_1k = {
+            "gemini-2.5-pro": 0.0035,
+            "gemini-2.5-flash": 0.00035
+        }
+        self.quota_tracker["cost_estimate"] += (tokens_used / 1000) * cost_per_1k.get(model_name, 0)
+        
+        if self.quota_tracker["daily_calls"] > self.quota_tracker["daily_limit"]:
+            st.warning(f"⚠️ Đã sử dụng {self.quota_tracker['daily_calls']} API calls hôm nay!")
+
+    def _get_model(self, model_name, system_instr=None, task_type="general"):
         """Hàm helper để khởi tạo model đúng phiên bản"""
         # ✅ DANH SÁCH MODEL MỚI NHẤT (Cập nhật 2025)
         valid_names = {
@@ -51,14 +75,14 @@ class AI_Core:
             return genai.GenerativeModel(
                 model_name=target_name,
                 safety_settings=self.safety_settings,
-                generation_config=self.gen_config,
+                generation_config=self._get_gen_config(task_type), # Cập nhật dùng config động
                 system_instruction=system_instr
             )
         except Exception as e:
             # st.warning(f"⚠️ Không thể khởi tạo model {target_name}: {e}")
             return None
 
-    def generate(self, prompt, model_type="flash", system_instruction=None):
+    def generate(self, prompt, model_type="flash", system_instruction=None, task_type="general"):
         """
         Hàm gọi AI chính: Tự động chuyển model nếu lỗi (Fallback Strategy)
         """
@@ -87,7 +111,7 @@ class AI_Core:
         for m_type, m_name, base_wait_time in plan:
             try:
                 # Khởi tạo model
-                model = self._get_model(m_type, system_instr=system_instruction)
+                model = self._get_model(m_type, system_instr=system_instruction, task_type=task_type)
                 if not model: continue
                 
                 # Gọi API
@@ -95,6 +119,12 @@ class AI_Core:
                 
                 # Kiểm tra kết quả
                 if response and hasattr(response, 'text') and response.text:
+                    # Tracking usage khi thành công
+                    token_count = 0
+                    if hasattr(response, 'usage_metadata'):
+                        token_count = response.usage_metadata.total_token_count
+                    self._track_usage(m_name, token_count)
+                    
                     return response.text
                 
                 # Xử lý các lý do bị chặn (Safety, Token...)
@@ -138,8 +168,10 @@ class AI_Core:
 
     @staticmethod
     @st.cache_data(show_spinner=False, ttl=3600)
-    def analyze_static(text, instruction):
+    def analyze_static(text_hash, text, instruction):
         """
+        text_hash = hashlib.md5(text.encode()).hexdigest()
+        Chỉ cache theo hash, tiết kiệm bộ nhớ
         Hàm dùng riêng cho RAG (Đọc tài liệu) - Có Cache để tiết kiệm tiền
         """
         try:
