@@ -46,7 +46,7 @@ class AI_Core:
         configs = {
             "debate": {"temperature": 0.9, "max_tokens": 2048},
             "translation": {"temperature": 0.3, "max_tokens": 4096},
-            "book_analysis": {"temperature": 0.7, "max_tokens": 8192},
+            "book_analysis": {"temperature": 0.7, "max_tokens": 4192},
             "general": {"temperature": 0.8, "max_tokens": 1024}
         }
         return genai.GenerationConfig(**configs.get(task_type, configs["general"]))
