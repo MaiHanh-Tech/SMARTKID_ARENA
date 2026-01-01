@@ -539,6 +539,20 @@ def run():
                     except Exception as e:
                         st.error(f"Lỗi trong quá trình tranh luận: {e}")
 
+                st.divider()
+                    st.markdown("### 🧠 Phân Tích Logic & Ngụy Biện")
+                    arg_text = st.text_area("Nhập đoạn lập luận cần kiểm tra:", height=100)
+                    if st.button("🔍 Phân tích Lập luận"):
+                        ana = ArgumentAnalyzer()
+                        res = ana.analyze_argument(arg_text)
+                        st.metric("Điểm Logic", f"{res['strength']}/100")
+                        if res['fallacies']:
+                            st.error("⚠️ Phát hiện Ngụy biện:")
+                            for f in res['fallacies']:
+                             st.write(f"- **{f['type']}**: {f['explanation']}")
+                        else:
+                            st.success("✅ Lập luận vững chắc.")
+                    
                 full_log = "\n\n".join(full_transcript)
                 store_history("Hội Đồng Tranh Biện", f"Chủ đề: {topic}", full_log)
 
