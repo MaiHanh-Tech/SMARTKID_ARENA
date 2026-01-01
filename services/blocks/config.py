@@ -34,6 +34,3 @@ class AppConfig:
         "embedding": 604800    # 7 days
     }
 
-# Sử dụng:
-from config import AppConfig
-model = AppConfig.GEMINI_MODELS["pro"]
