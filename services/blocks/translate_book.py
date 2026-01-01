@@ -4,8 +4,10 @@ import os
 import sys
 import time
 import streamlit as st
-from translator import Translator
 from concurrent.futures import ThreadPoolExecutor
+
+# 👇 1. SỬA IMPORT TRANSLATOR (Thêm services.blocks.)
+from services.blocks.translator import Translator
 
 # Prompt xử lý văn bản
 EXPERT_PROMPT = """Bạn là chuyên gia dịch thuật. Hãy dịch đoạn văn bản sau.
@@ -132,9 +134,16 @@ def translate_file(input_text, status_placeholder=None, progress_bar=None, inclu
 
     # Mode 1: Interactive
     if translation_mode == "Interactive Word-by-Word" and processed_words:
+        # 👇 2. SỬA ĐƯỜNG DẪN TEMPLATE (Nên dùng đường dẫn tuyệt đối hoặc relative đúng)
         try:
-            with open('template.html', 'r', encoding='utf-8') as f: template = f.read()
-        except: template = "<body>{{content}}</body>"
+            # Tìm file template.html ở thư mục services/blocks/
+            with open('services/blocks/template.html', 'r', encoding='utf-8') as f: template = f.read()
+        except: 
+            # Fallback nếu không tìm thấy, thử tìm ở root
+            try:
+                with open('template.html', 'r', encoding='utf-8') as f: template = f.read()
+            except:
+                template = "<body>{{content}}</body>"
         
         content = create_interactive_html_block(processed_words)
         # Thay thế biến {{voice_lang}} trong template
@@ -168,8 +177,12 @@ def translate_file(input_text, status_placeholder=None, progress_bar=None, inclu
     html_body += '</div>'
 
     try:
-        with open('template.html', 'r', encoding='utf-8') as f: template = f.read()
-    except: template = "<body>{{content}}</body>"
+        with open('services/blocks/template.html', 'r', encoding='utf-8') as f: template = f.read()
+    except: 
+        try:
+            with open('template.html', 'r', encoding='utf-8') as f: template = f.read()
+        except:
+            template = "<body>{{content}}</body>"
     
     css_fix = """<script>
     (function(){
