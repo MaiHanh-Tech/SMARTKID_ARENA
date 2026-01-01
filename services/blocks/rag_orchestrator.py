@@ -17,6 +17,7 @@ from typing import List, Tuple, Any, Optional, Callable
 import streamlit as st
 import traceback
 import time
+import hashlib
 
 # Local blocks
 from services.blocks.embedding_engine import load_encoder, encode_texts
@@ -72,7 +73,10 @@ def analyze_document_streamlit(title: str, text: str, user_lang: str = "vi", max
     try:
         ai = AI_Core()
         content = text[:max_chars]
-        return ai.analyze_static(content, BOOK_ANALYSIS_PROMPT)
+        # Tính hash theo MD5 như mô tả trong docstring của analyze_static
+        text_hash = hashlib.md5(content.encode("utf-8")).hexdigest()
+        # Gọi đúng signature: (text_hash, text, instruction)
+        return ai.analyze_static(text_hash, content, BOOK_ANALYSIS_PROMPT)
     except Exception as e:
         return f"❌ Lỗi phân tích: {e}"
 
