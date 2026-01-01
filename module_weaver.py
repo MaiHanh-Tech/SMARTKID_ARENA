@@ -10,7 +10,7 @@ from voice_block import Voice_Engine
 from prompts import DEBATE_PERSONAS, BOOK_ANALYSIS_PROMPT
 import time
 
-# ✅ IMPORT SUPABASE (không raise nếu thiếu)
+# Optional supabase import (don't fail app if missing)
 try:
     from supabase import create_client, Client
 except ImportError:
@@ -134,15 +134,15 @@ def check_model_available():
 def doc_file_safe(uploaded_file):
     return doc_file(uploaded_file)
 
-# Helper to get or init KnowledgeUniverse without creating a local-name conflict
+# Helper to get or init KnowledgeUniverse without local-name conflicts
 def get_knowledge_universe():
-    kg_instance = st.session_state.get("knowledge_universe", None)
-    if kg_instance is not None:
-        return kg_instance
+    ku = st.session_state.get("knowledge_universe", None)
+    if ku is not None:
+        return ku
     try:
-        kg_instance = init_knowledge_universe()
-        st.session_state["knowledge_universe"] = kg_instance
-        return kg_instance
+        ku = init_knowledge_universe()
+        st.session_state["knowledge_universe"] = ku
+        return ku
     except Exception:
         return None
 
@@ -151,8 +151,8 @@ def run():
     ai = AI_Core()
     voice = Voice_Engine()
 
-    # initialize/kg early via helper (guaranteed before any reference)
-    kg = get_knowledge_universe()
+    # initialize knowledge_universe early to avoid UnboundLocalError
+    knowledge_universe = get_knowledge_universe()
 
     with st.sidebar:
         st.markdown("---")
@@ -210,12 +210,12 @@ def run():
                     except Exception as e:
                         st.warning(f"Không thể tính similarity: {e}")
 
-                # Re-check KG via helper (safe, no UnboundLocalError)
-                kg = get_knowledge_universe()
+                # Re-check knowledge_universe via helper (safe, no UnboundLocalError)
+                knowledge_universe = get_knowledge_universe()
 
-                # Safe call: only call methods on kg if available
+                # Safe call: only call methods on knowledge_universe if available
                 try:
-                    related = kg.find_related_books(text[:2000], top_k=3) if kg else []
+                    related = knowledge_universe.find_related_books(text[:2000], top_k=3) if knowledge_universe else []
                 except Exception as e:
                     st.warning(f"Lỗi khi tìm sách liên quan: {e}")
                     related = []
