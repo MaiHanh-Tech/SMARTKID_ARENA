@@ -5,7 +5,7 @@ from sklearn.ensemble import IsolationForest, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 from services.blocks.cfo_data_manager import tao_data_full_kpi, validate_uploaded_data, tinh_chi_so
-from ai_core import AI_Core
+from services.blocks.ai_core import AI_Core
 
 # --- CÁC HÀM XỬ LÝ NÂNG CAO (NEW) ---
 
