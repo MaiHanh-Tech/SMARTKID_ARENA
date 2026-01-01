@@ -10,6 +10,9 @@ from services.blocks.rag_orchestrator import analyze_document_streamlit, compute
 from ai_core import AI_Core
 from voice_block import Voice_Engine
 from prompts import DEBATE_PERSONAS, BOOK_ANALYSIS_PROMPT
+from collaborative_debate import CollaborativeDebateRoom
+from reading_tracker import ReadingProgressTracker
+from argument_analyzer import ArgumentAnalyzer
 import time
 
 # Optional supabase import (don't fail app if missing)
@@ -294,7 +297,7 @@ def run():
 
     st.header(f"🧠 The Cognitive Weaver")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([T("tab1"), T("tab2"), T("tab3"), T("tab4"), T("tab5")])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([T("tab1"), T("tab2"), T("tab3"), T("tab4"), T("tab5"), "📖 Reading Tracker"])
 
     # TAB 1: RAG
     with tab1:
@@ -614,3 +617,29 @@ def run():
                     st.markdown(ct)
         else:
             st.info(T("t5_empty"))
+
+
+# TAB 6: READING TRACKER
+    with tab6:
+        st.subheader("📊 Tiến độ đọc sách & Spaced Repetition")
+        if "current_user" in st.session_state and st.session_state.current_user:
+            try:
+                db_client = create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
+                tracker = ReadingProgressTracker(db_client, st.session_state.current_user)
+                
+                # Show Due Reviews
+                due = tracker.get_due_reviews()
+                if due:
+                    st.warning(f"⏰ {len(due)} sách cần ôn tập!")
+                    for rev in due:
+                        with st.expander(f"📘 {rev.get('reading_progress', {}).get('book_title', 'Sách')} (Lần {rev['repetition']})"):
+                            q = st.slider("Độ nhớ (0-5):", 0, 5, key=f"q_{rev['book_id']}")
+                            if st.button("Lưu", key=f"b_{rev['book_id']}"):
+                                tracker.review_book(rev['book_id'], q)
+                                st.rerun()
+                else:
+                    st.success("✅ Đã hoàn thành ôn tập hôm nay.")
+            except Exception as e:
+                st.error(f"Lỗi kết nối DB: {e}")
+        else:
+            st.info("Vui lòng đăng nhập để sử dụng tính năng này.")
