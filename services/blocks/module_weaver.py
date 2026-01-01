@@ -3,19 +3,23 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from sklearn.metrics.pairwise import cosine_similarity
+import time
+import json
+
+# 👇 1. SỬA ĐƯỜNG DẪN IMPORT (Thêm services.blocks.)
 from services.blocks.file_processor import doc_file
 from services.blocks.embedding_engine import load_encoder
 from services.blocks.html_generator import load_template, create_html_block, create_interactive_html_block
 from services.blocks.rag_orchestrator import analyze_document_streamlit, compute_similarity_with_excel, store_history, init_knowledge_universe, create_personal_rag, tai_lich_su
-from ai_core import AI_Core
-from voice_block import Voice_Engine
-from prompts import DEBATE_PERSONAS, BOOK_ANALYSIS_PROMPT
-from collaborative_debate import CollaborativeDebateRoom
-from reading_tracker import ReadingProgressTracker
-from argument_analyzer import ArgumentAnalyzer
-import time
+from services.blocks.prompts import DEBATE_PERSONAS, BOOK_ANALYSIS_PROMPT
 
-# Optional supabase import (don't fail app if missing)
+# 👇 2. IMPORT MỚI (Dùng Service Locator & Modules mới)
+from services.blocks.service_locator import ServiceLocator
+from services.blocks.collaborative_debate import CollaborativeDebateRoom
+from services.blocks.reading_tracker import ReadingProgressTracker
+from services.blocks.argument_analyzer import ArgumentAnalyzer
+
+# Optional supabase import
 try:
     from supabase import create_client, Client
 except ImportError:
@@ -151,67 +155,46 @@ def get_knowledge_universe():
     except Exception:
         return None
 
-# --- NEW LOGIC IMPLEMENTATIONS (BLOCK 2) ---
+# --- NEW LOGIC IMPLEMENTATIONS ---
 
 def _check_consensus_reached(chat_history):
-    """
-    [Inference] Phân tích xem tranh luận đã hội tụ chưa
-    """
     if len(chat_history) < 4:
         return False
     
-    # Lấy 2 tin nhắn cuối cùng (thường là từ 2 assistant khác nhau)
     last_two = [chat_history[-2]['content'], chat_history[-1]['content']]
     encoder = load_models()
     
     if encoder:
         embs = encoder.encode(last_two)
         sim = cosine_similarity([embs[0]], [embs[1]])[0][0]
-        
-        if sim > 0.85:  # Rất giống nhau về ngữ nghĩa
-            return True
+        if sim > 0.85: return True
     
-    # Keyword-based fallback
     agreement_keywords = ["đồng ý", "đúng", "thừa nhận", "agree", "correct", "nhất trí", "thống nhất"]
     last_msg = chat_history[-1]['content'].lower()
     if any(kw in last_msg for kw in agreement_keywords):
         return True
-    
     return False
 
 def detect_contradictions(ku, threshold=0.8):
-    """
-    Tìm các cặp sách có embedding tương đồng CAO (>0.8)
-    NHƯNG thuộc các episteme_layer TRÁI NGƯỢC
-    """
     contradictions = []
-    
     if not hasattr(ku, 'episteme_layers') or not hasattr(ku, 'graph'):
         return []
 
-    # Episteme layers có thể mâu thuẫn
     contradiction_pairs = [
-        ("Vật lý & Sinh học", "Ý thức & Giải phóng"),  # Vật chất vs Tinh thần
-        ("Toán học & Logic", "Văn hóa & Quyền lực")    # Tuyệt đối vs Tương đối
+        ("Vật lý & Sinh học", "Ý thức & Giải phóng"),
+        ("Toán học & Logic", "Văn hóa & Quyền lực")
     ]
     
     for layer_a, layer_b in contradiction_pairs:
         books_a = ku.episteme_layers.get(layer_a, [])
         books_b = ku.episteme_layers.get(layer_b, [])
-        
         for node_a in books_a:
             for node_b in books_b:
-                if node_a not in ku.graph.nodes or node_b not in ku.graph.nodes:
-                    continue
-                    
+                if node_a not in ku.graph.nodes or node_b not in ku.graph.nodes: continue
                 emb_a = ku.graph.nodes[node_a].get("embedding")
                 emb_b = ku.graph.nodes[node_b].get("embedding")
-                
-                if emb_a is None or emb_b is None:
-                    continue
-                
+                if emb_a is None or emb_b is None: continue
                 sim = cosine_similarity([emb_a], [emb_b])[0][0]
-                
                 if sim > threshold:
                     contradictions.append({
                         "book_1": ku.graph.nodes[node_a].get("title", node_a),
@@ -220,69 +203,49 @@ def detect_contradictions(ku, threshold=0.8):
                         "tension": f"{layer_a} ⚡ {layer_b}",
                         "explanation": "[Inference] Hai sách này cùng đề cập một chủ đề nhưng từ hai episteme khác nhau."
                     })
-    
     return contradictions
 
-def calculate_relevance_score(node, query_emb, current_time):
-    """
-    Score = Base_Similarity × Time_Decay_Factor
-    """
-    if "embedding" not in node:
-        return 0
-        
-    base_sim = cosine_similarity([query_emb], [node["embedding"]])[0][0]
-    
-    # Mặc định nếu không có ngày tháng thì lấy hiện tại (không decay)
-    added_at_str = node.get("added_at")
-    if not added_at_str:
-        return base_sim
-
-    try:
-        added_time = datetime.fromisoformat(added_at_str)
-        days_old = (current_time - added_time).days
-        if days_old < 0: days_old = 0
-    except:
-        return base_sim
-    
-    # Exponential decay: e^(-λt)
-    decay_rate = 0.001 
-    time_factor = np.exp(-decay_rate * days_old)
-    
-    return base_sim * time_factor
-
 def find_related_books_with_decay(ku, query_text, top_k=3):
-    if not hasattr(ku, 'graph'):
-        return []
-        
+    if not hasattr(ku, 'graph'): return []
     encoder = load_models()
-    if not encoder:
-        return []
-        
+    if not encoder: return []
     query_emb = encoder.encode([query_text])[0]
     current_time = datetime.now()
     
     scored_nodes = []
     for node_id in ku.graph.nodes:
         node = ku.graph.nodes[node_id]
-        score = calculate_relevance_score(node, query_emb, current_time)
+        if "embedding" not in node: continue
+        base_sim = cosine_similarity([query_emb], [node["embedding"]])[0][0]
+        
+        added_at_str = node.get("added_at")
+        time_factor = 1.0
+        if added_at_str:
+            try:
+                added_time = datetime.fromisoformat(added_at_str)
+                days_old = (current_time - added_time).days
+                if days_old < 0: days_old = 0
+                decay_rate = 0.001 
+                time_factor = np.exp(-decay_rate * days_old)
+            except: pass
+        
+        score = base_sim * time_factor
         scored_nodes.append((node_id, score))
         
     scored_nodes.sort(key=lambda x: x[1], reverse=True)
-    
     results = []
     for node_id, score in scored_nodes[:top_k]:
         title = ku.graph.nodes[node_id].get("title", node_id)
         explanation = ku.graph.nodes[node_id].get("summary", "")[:100] + "..."
         results.append((node_id, title, score, explanation))
-        
     return results
 
 # --- RUN ---
 def run():
-    ai = AI_Core()
-    voice = Voice_Engine()
+    # 👇 3. KHỞI TẠO QUA SERVICE LOCATOR
+    ai = ServiceLocator.get("ai_core")
+    voice = ServiceLocator.get("voice_engine")
 
-    # initialize knowledge_universe early to avoid UnboundLocalError
     knowledge_universe = get_knowledge_universe()
 
     with st.sidebar:
@@ -297,6 +260,7 @@ def run():
 
     st.header(f"🧠 The Cognitive Weaver")
 
+    # 👇 ĐÃ THÊM TAB 6
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([T("tab1"), T("tab2"), T("tab3"), T("tab4"), T("tab5"), "📖 Reading Tracker"])
 
     # TAB 1: RAG
@@ -341,13 +305,10 @@ def run():
                     except Exception as e:
                         st.warning(f"Không thể tính similarity: {e}")
 
-                # Re-check knowledge_universe via helper (safe, no UnboundLocalError)
                 knowledge_universe = get_knowledge_universe()
 
-                # Safe call: use local decay function if KU exists
                 try:
                     if knowledge_universe:
-                        # USE NEW FUNCTION WITH TIME DECAY
                         related = find_related_books_with_decay(knowledge_universe, text[:2000], top_k=3)
                     else:
                         related = []
@@ -372,7 +333,6 @@ def run():
                     else:
                         st.error(f"❌ Không thể phân tích file {f.name}: {res}")
 
-        # Graph visualization when Excel provided
         if file_excel:
             try:
                 if "df_viz" not in st.session_state:
@@ -388,7 +348,7 @@ def run():
                             with st.spinner("Đang số hóa sách..."):
                                 st.session_state.book_embs = vec_local.encode(df_v["Tên sách"].tolist())
                         embs = st.session_state.book_embs
-                        sim = np.array([])  # fallback
+                        sim = np.array([]) 
                         try:
                             from sklearn.metrics.pairwise import cosine_similarity
                             sim = cosine_similarity(embs)
@@ -410,7 +370,6 @@ def run():
                         config = Config(width=900, height=600, directed=False, physics=True, collapsible=False)
                         agraph(nodes, edges, config)
                         
-                        # SHOW CONTRADICTIONS IF KU EXISTS
                         knowledge_universe = get_knowledge_universe()
                         if knowledge_universe:
                             contras = detect_contradictions(knowledge_universe, threshold=0.8)
@@ -490,7 +449,6 @@ def run():
                                 st.warning("⏰ Hết giờ! Cuộc tranh luận kết thúc sớm.")
                                 break
                             
-                            # CHECK CONSENSUS (Yêu cầu A)
                             if _check_consensus_reached(st.session_state.weaver_chat):
                                 status.update(label="✅ Tranh luận đã đạt đồng thuận!", state="complete")
                                 st.info("✅ Các bên đã tìm thấy điểm chung (Consensus Reached). Dừng tranh luận.")
@@ -539,22 +497,23 @@ def run():
                     except Exception as e:
                         st.error(f"Lỗi trong quá trình tranh luận: {e}")
 
-                st.divider()
-                    st.markdown("### 🧠 Phân Tích Logic & Ngụy Biện")
-                    arg_text = st.text_area("Nhập đoạn lập luận cần kiểm tra:", height=100)
-                    if st.button("🔍 Phân tích Lập luận"):
-                        ana = ArgumentAnalyzer()
-                        res = ana.analyze_argument(arg_text)
-                        st.metric("Điểm Logic", f"{res['strength']}/100")
-                        if res['fallacies']:
-                            st.error("⚠️ Phát hiện Ngụy biện:")
-                            for f in res['fallacies']:
-                             st.write(f"- **{f['type']}**: {f['explanation']}")
-                        else:
-                            st.success("✅ Lập luận vững chắc.")
-                    
                 full_log = "\n\n".join(full_transcript)
                 store_history("Hội Đồng Tranh Biện", f"Chủ đề: {topic}", full_log)
+
+        # 👇 4. PHÂN TÍCH LOGIC (Đã sửa lỗi thụt lề, đưa ra ngoài khối if/else)
+        st.divider()
+        st.markdown("### 🧠 Phân Tích Logic & Ngụy Biện")
+        arg_text = st.text_area("Nhập đoạn lập luận cần kiểm tra:", height=100)
+        if st.button("🔍 Phân tích Lập luận"):
+            ana = ArgumentAnalyzer()
+            res = ana.analyze_argument(arg_text)
+            st.metric("Điểm Logic", f"{res['strength']}/100")
+            if res['fallacies']:
+                st.error("⚠️ Phát hiện Ngụy biện:")
+                for f in res['fallacies']:
+                    st.write(f"- **{f['type']}**: {f['explanation']}")
+            else:
+                st.success("✅ Lập luận vững chắc.")
 
     # TAB 4: PHÒNG THU
     with tab4:
@@ -566,7 +525,7 @@ def run():
             if path:
                 st.audio(path)
 
-    # TAB 5: NHẬT KÝ (CÓ PHẦN BAYES)
+    # TAB 5: NHẬT KÝ
     with tab5:
         st.subheader("⏳ Nhật Ký & Phản Chiếu Tư Duy")
         if st.button("🔄 Tải lại", key="w_t5_refresh"):
@@ -632,13 +591,14 @@ def run():
         else:
             st.info(T("t5_empty"))
 
-
-# TAB 6: READING TRACKER
+    # TAB 6: READING TRACKER
     with tab6:
         st.subheader("📊 Tiến độ đọc sách & Spaced Repetition")
         if "current_user" in st.session_state and st.session_state.current_user:
             try:
-                db_client = create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
+                url = st.secrets["supabase"]["url"]
+                key = st.secrets["supabase"]["key"]
+                db_client = create_client(url, key)
                 tracker = ReadingProgressTracker(db_client, st.session_state.current_user)
                 
                 # Show Due Reviews
@@ -646,13 +606,20 @@ def run():
                 if due:
                     st.warning(f"⏰ {len(due)} sách cần ôn tập!")
                     for rev in due:
-                        with st.expander(f"📘 {rev.get('reading_progress', {}).get('book_title', 'Sách')} (Lần {rev['repetition']})"):
+                        # Safe get title
+                        book_title = "Sách"
+                        if isinstance(rev.get('reading_progress'), dict):
+                            book_title = rev['reading_progress'].get('book_title', 'Sách')
+                        
+                        with st.expander(f"📘 {book_title} (Lần {rev['repetition']})"):
                             q = st.slider("Độ nhớ (0-5):", 0, 5, key=f"q_{rev['book_id']}")
-                            if st.button("Lưu", key=f"b_{rev['book_id']}"):
+                            if st.button("Lưu đánh giá", key=f"b_{rev['book_id']}"):
                                 tracker.review_book(rev['book_id'], q)
+                                st.success("Đã lưu!")
+                                time.sleep(1)
                                 st.rerun()
                 else:
-                    st.success("✅ Đã hoàn thành ôn tập hôm nay.")
+                    st.success("✅ Bạn đã hoàn thành bài ôn tập hôm nay.")
             except Exception as e:
                 st.error(f"Lỗi kết nối DB: {e}")
         else:
