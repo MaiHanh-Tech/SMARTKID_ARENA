@@ -27,7 +27,7 @@ except ImportError:
     cosine_similarity = None
 
 # Fallback: AI Core nếu không có orchestrator
-from ai_core import AI_Core
+from services.blocks.ai_core import AI_Core
 
 # ===== CONSTANTS =====
 LANGUAGES = {
