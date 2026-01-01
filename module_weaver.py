@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from datetime import datetime
+from sklearn.metrics.pairwise import cosine_similarity
 from services.blocks.file_processor import doc_file
 from services.blocks.embedding_engine import load_encoder
 from services.blocks.html_generator import load_template, create_html_block, create_interactive_html_block
@@ -146,6 +148,132 @@ def get_knowledge_universe():
     except Exception:
         return None
 
+# --- NEW LOGIC IMPLEMENTATIONS (BLOCK 2) ---
+
+def _check_consensus_reached(chat_history):
+    """
+    [Inference] Phân tích xem tranh luận đã hội tụ chưa
+    """
+    if len(chat_history) < 4:
+        return False
+    
+    # Lấy 2 tin nhắn cuối cùng (thường là từ 2 assistant khác nhau)
+    last_two = [chat_history[-2]['content'], chat_history[-1]['content']]
+    encoder = load_models()
+    
+    if encoder:
+        embs = encoder.encode(last_two)
+        sim = cosine_similarity([embs[0]], [embs[1]])[0][0]
+        
+        if sim > 0.85:  # Rất giống nhau về ngữ nghĩa
+            return True
+    
+    # Keyword-based fallback
+    agreement_keywords = ["đồng ý", "đúng", "thừa nhận", "agree", "correct", "nhất trí", "thống nhất"]
+    last_msg = chat_history[-1]['content'].lower()
+    if any(kw in last_msg for kw in agreement_keywords):
+        return True
+    
+    return False
+
+def detect_contradictions(ku, threshold=0.8):
+    """
+    Tìm các cặp sách có embedding tương đồng CAO (>0.8)
+    NHƯNG thuộc các episteme_layer TRÁI NGƯỢC
+    """
+    contradictions = []
+    
+    if not hasattr(ku, 'episteme_layers') or not hasattr(ku, 'graph'):
+        return []
+
+    # Episteme layers có thể mâu thuẫn
+    contradiction_pairs = [
+        ("Vật lý & Sinh học", "Ý thức & Giải phóng"),  # Vật chất vs Tinh thần
+        ("Toán học & Logic", "Văn hóa & Quyền lực")    # Tuyệt đối vs Tương đối
+    ]
+    
+    for layer_a, layer_b in contradiction_pairs:
+        books_a = ku.episteme_layers.get(layer_a, [])
+        books_b = ku.episteme_layers.get(layer_b, [])
+        
+        for node_a in books_a:
+            for node_b in books_b:
+                if node_a not in ku.graph.nodes or node_b not in ku.graph.nodes:
+                    continue
+                    
+                emb_a = ku.graph.nodes[node_a].get("embedding")
+                emb_b = ku.graph.nodes[node_b].get("embedding")
+                
+                if emb_a is None or emb_b is None:
+                    continue
+                
+                sim = cosine_similarity([emb_a], [emb_b])[0][0]
+                
+                if sim > threshold:
+                    contradictions.append({
+                        "book_1": ku.graph.nodes[node_a].get("title", node_a),
+                        "book_2": ku.graph.nodes[node_b].get("title", node_b),
+                        "similarity": float(sim),
+                        "tension": f"{layer_a} ⚡ {layer_b}",
+                        "explanation": "[Inference] Hai sách này cùng đề cập một chủ đề nhưng từ hai episteme khác nhau."
+                    })
+    
+    return contradictions
+
+def calculate_relevance_score(node, query_emb, current_time):
+    """
+    Score = Base_Similarity × Time_Decay_Factor
+    """
+    if "embedding" not in node:
+        return 0
+        
+    base_sim = cosine_similarity([query_emb], [node["embedding"]])[0][0]
+    
+    # Mặc định nếu không có ngày tháng thì lấy hiện tại (không decay)
+    added_at_str = node.get("added_at")
+    if not added_at_str:
+        return base_sim
+
+    try:
+        added_time = datetime.fromisoformat(added_at_str)
+        days_old = (current_time - added_time).days
+        if days_old < 0: days_old = 0
+    except:
+        return base_sim
+    
+    # Exponential decay: e^(-λt)
+    decay_rate = 0.001 
+    time_factor = np.exp(-decay_rate * days_old)
+    
+    return base_sim * time_factor
+
+def find_related_books_with_decay(ku, query_text, top_k=3):
+    if not hasattr(ku, 'graph'):
+        return []
+        
+    encoder = load_models()
+    if not encoder:
+        return []
+        
+    query_emb = encoder.encode([query_text])[0]
+    current_time = datetime.now()
+    
+    scored_nodes = []
+    for node_id in ku.graph.nodes:
+        node = ku.graph.nodes[node_id]
+        score = calculate_relevance_score(node, query_emb, current_time)
+        scored_nodes.append((node_id, score))
+        
+    scored_nodes.sort(key=lambda x: x[1], reverse=True)
+    
+    results = []
+    for node_id, score in scored_nodes[:top_k]:
+        title = ku.graph.nodes[node_id].get("title", node_id)
+        explanation = ku.graph.nodes[node_id].get("summary", "")[:100] + "..."
+        results.append((node_id, title, score, explanation))
+        
+    return results
+
 # --- RUN ---
 def run():
     ai = AI_Core()
@@ -213,9 +341,13 @@ def run():
                 # Re-check knowledge_universe via helper (safe, no UnboundLocalError)
                 knowledge_universe = get_knowledge_universe()
 
-                # Safe call: only call methods on knowledge_universe if available
+                # Safe call: use local decay function if KU exists
                 try:
-                    related = knowledge_universe.find_related_books(text[:2000], top_k=3) if knowledge_universe else []
+                    if knowledge_universe:
+                        # USE NEW FUNCTION WITH TIME DECAY
+                        related = find_related_books_with_decay(knowledge_universe, text[:2000], top_k=3)
+                    else:
+                        related = []
                 except Exception as e:
                     st.warning(f"Lỗi khi tìm sách liên quan: {e}")
                     related = []
@@ -229,9 +361,9 @@ def run():
                             st.markdown(link)
                         st.markdown(res)
                         if related:
-                            st.markdown("**Sách liên quan từ Knowledge Graph:**")
+                            st.markdown("**Sách liên quan từ Knowledge Graph (Có Time Decay):**")
                             for node_id, title, score, explanation in related:
-                                st.markdown(f"- **{title}** ({score:.2f}) — {explanation}")
+                                st.markdown(f"- **{title}** (Relevance: {score:.3f}) — {explanation}")
                         st.markdown("---")
                         store_history("Phân Tích Sách", f.name, res[:500])
                     else:
@@ -274,6 +406,16 @@ def run():
                                     edges.append(Edge(source=str(i), target=str(j), color="#118AB2"))
                         config = Config(width=900, height=600, directed=False, physics=True, collapsible=False)
                         agraph(nodes, edges, config)
+                        
+                        # SHOW CONTRADICTIONS IF KU EXISTS
+                        knowledge_universe = get_knowledge_universe()
+                        if knowledge_universe:
+                            contras = detect_contradictions(knowledge_universe, threshold=0.8)
+                            if contras:
+                                st.error("⚡ PHÁT HIỆN MÂU THUẪN NHẬN THỨC (Episteme Conflict)")
+                                for c in contras:
+                                    st.write(f"- **{c['book_1']}** vs **{c['book_2']}** ({c['tension']}): {c['explanation']}")
+
             except Exception:
                 pass
 
@@ -343,6 +485,12 @@ def run():
                         for round_num in range(1, 4):
                             if time.time() - start_time > MAX_DEBATE_TIME:
                                 st.warning("⏰ Hết giờ! Cuộc tranh luận kết thúc sớm.")
+                                break
+                            
+                            # CHECK CONSENSUS (Yêu cầu A)
+                            if _check_consensus_reached(st.session_state.weaver_chat):
+                                status.update(label="✅ Tranh luận đã đạt đồng thuận!", state="complete")
+                                st.info("✅ Các bên đã tìm thấy điểm chung (Consensus Reached). Dừng tranh luận.")
                                 break
 
                             status.update(label=f"🔄 Vòng {round_num}/3 đang diễn ra...")
