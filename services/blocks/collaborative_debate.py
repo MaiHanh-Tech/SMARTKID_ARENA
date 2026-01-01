@@ -1,5 +1,5 @@
 from datetime import datetime
-from ai_core import AI_Core
+from services.blocks.ai_core import AI_Core
 import streamlit as st
 
 class CollaborativeDebateRoom:
