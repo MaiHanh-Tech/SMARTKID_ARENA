@@ -203,29 +203,50 @@ if not st.session_state.quiz_active:
                 if st.button("📂 MỞ SÁCH NÀY", type="secondary", use_container_width=True):
                     book_path = os.path.join(books_path, selected_book_name)
                     file_name = selected_book_name
-                    
+    
+                    # ✅ DEBUG: Hiện path
+                    st.info(f"🔍 Debug: Đang thử đọc file từ: `{book_path}`")
+    
+                    # ✅ DEBUG: Kiểm tra file có tồn tại không
+                    if not os.path.exists(book_path):
+                        st.error(f"❌ File không tồn tại tại path: {book_path}")
+                    else:
+                        st.success(f"✅ File tồn tại! Size: {os.path.getsize(book_path):,} bytes")
+    
                     with st.spinner(f"📖 Đang đọc {file_name}..."):
                         try:
                             from services.blocks.file_processor import doc_file
-                            
+            
                             # Tạo fake UploadedFile để tương thích với doc_file
                             class FakeUploadedFile:
                                 def __init__(self, path):
                                     self.name = os.path.basename(path)
                                     self._path = path
-                                
+                
                                 def read(self):
                                     with open(self._path, 'rb') as f:
                                         return f.read()
-                            
+            
                             fake_file = FakeUploadedFile(book_path)
+            
+                            # ✅ DEBUG: Log trước khi gọi doc_file
+                            st.info("🔧 Đang gọi hàm doc_file()...")
+            
                             content = doc_file(fake_file)
-                            
-                            if not content:
-                                st.error("❌ Không đọc được file. Hãy thử file khác!")
-                            
+            
+                            # ✅ DEBUG: Hiện kết quả
+                            if content:
+                                st.success(f"✅ Đọc thành công! Độ dài: {len(content):,} ký tự")
+                            else:
+                                st.error("❌ doc_file() trả về rỗng!")
+            
                         except Exception as e:
-                            st.error(f"❌ Lỗi đọc file: {e}")
+                            st.error(f"❌ Lỗi đọc file: {type(e).__name__}: {e}")
+            
+                            # ✅ DEBUG: Hiện full traceback
+                            import traceback
+                            st.code(traceback.format_exc())
+            
                             content = None
             
             else:  # Upload mới
