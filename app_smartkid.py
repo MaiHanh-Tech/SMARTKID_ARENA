@@ -181,10 +181,11 @@ if not st.session_state.quiz_active:
             available_books = [f for f in os.listdir(books_path) if f.lower().endswith(('.pdf', '.docx'))]
             available_books.sort()
         
-        # UI: Chọn sách sẵn hoặc upload
+        # ===== KHỞI TẠO BIẾN =====
         content = None
         file_name = ""
         
+        # ===== UI: CHỌN NGUỒN SÁCH =====
         if available_books:
             st.success(f"📚 Tìm thấy **{len(available_books)} sách sẵn** cho môn {subject}")
             
@@ -196,6 +197,7 @@ if not st.session_state.quiz_active:
             )
             
             if choice == "📖 Dùng sách sẵn trong repo":
+                # Chọn sách từ dropdown
                 selected_book_name = st.selectbox("Chọn sách:", available_books)
                 
                 if st.button("📂 MỞ SÁCH NÀY", type="secondary", use_container_width=True):
@@ -206,7 +208,7 @@ if not st.session_state.quiz_active:
                         try:
                             from services.blocks.file_processor import doc_file
                             
-                            # HACK: Tạo fake UploadedFile để tương thích với doc_file
+                            # Tạo fake UploadedFile để tương thích với doc_file
                             class FakeUploadedFile:
                                 def __init__(self, path):
                                     self.name = os.path.basename(path)
@@ -230,7 +232,8 @@ if not st.session_state.quiz_active:
                 uploaded_file = st.file_uploader(
                     "Upload sách (PDF/DOCX):",
                     type=["pdf", "docx"],
-                    help="Tải lên sách giáo khoa hoặc sách bài tập"
+                    help="Tải lên sách giáo khoa hoặc sách bài tập",
+                    key="upload_with_repo"
                 )
                 
                 if uploaded_file:
@@ -250,7 +253,8 @@ if not st.session_state.quiz_active:
             uploaded_file = st.file_uploader(
                 "Upload sách (PDF/DOCX):",
                 type=["pdf", "docx"],
-                help="Tải lên sách giáo khoa hoặc sách bài tập"
+                help="Tải lên sách giáo khoa hoặc sách bài tập",
+                key="upload_no_repo"
             )
             
             if uploaded_file:
@@ -264,7 +268,7 @@ if not st.session_state.quiz_active:
                         st.error("❌ Không đọc được file. Hãy thử file khác!")
         
         # ===== NẾU ĐÃ CÓ NỘI DUNG → TẠO QUIZ =====
-        if content:
+        if content and len(content) > 100:
             st.success(f"✅ Đã đọc xong **{file_name}** ({len(content):,} ký tự)")
             
             st.markdown("---")
@@ -307,47 +311,6 @@ if not st.session_state.quiz_active:
                         st.rerun()
                     else:
                         st.error("❌ Không thể tạo quiz. Hãy thử lại!")
-        
-        
-        if uploaded_file:
-            # Đọc nội dung
-            with st.spinner("📖 Đang đọc sách..."):
-                from services.blocks.file_processor import doc_file
-                content = doc_file(uploaded_file)
-            
-            if content:
-                st.success(f"✅ Đã đọc xong! Tổng {len(content)} ký tự")
-                
-                # Chọn chương
-                chapter = st.text_input("Nhập số chương (VD: 1, 2, 3) hoặc 'ALL' để ôn toàn môn:", "1")
-                
-                # Chọn độ khó
-                difficulty = st.select_slider(
-                    "Chọn độ khó:",
-                    options=["Easy 😊", "Medium 🤔", "Hard 😰", "Expert 💀"]
-                )
-                
-                num_questions = st.slider("Số câu hỏi:", 5, 20, 10)
-                
-                if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
-                    with st.spinner("🤖 AI đang sinh câu hỏi..."):
-                        quiz = st.session_state.quiz_engine.generate_quiz(
-                            content=content,
-                            subject=subject,
-                            chapter=chapter,
-                            difficulty=difficulty,
-                            num_questions=num_questions
-                        )
-                        
-                        if quiz:
-                            st.session_state.current_quiz = quiz
-                            st.session_state.quiz_active = True
-                            st.session_state.current_question = 0
-                            st.session_state.score = 0
-                            st.session_state.answers = []
-                            st.rerun()
-            else:
-                st.error("❌ Không đọc được file. Hãy thử file khác!")
     
     # ===== CHALLENGE MODE =====
     elif st.session_state.get("mode") == "challenge":
