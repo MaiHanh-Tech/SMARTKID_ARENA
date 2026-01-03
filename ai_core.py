@@ -24,10 +24,10 @@ class AI_Core:
                 {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
             ]
             
-            # Cấu hình Generation Config (Tối ưu cho 2.5 Pro)
+            # Cấu hình Generation Config (Tối ưu cho câu hỏi)
             self.gen_config = genai.GenerationConfig(
-                temperature=0.8,
-                max_output_tokens= 8000,  
+                temperature=0.7,  # Cân bằng giữa sáng tạo và chính xác
+                max_output_tokens=4000,  # Đủ cho 20 câu hỏi
                 top_p=0.95,
                 top_k=40
             )
@@ -37,15 +37,12 @@ class AI_Core:
 
     def _get_model(self, model_name, system_instr=None):
         """Hàm helper để khởi tạo model đúng phiên bản"""
-        # ✅ DANH SÁCH MODEL MỚI NHẤT (Cập nhật 2025)
         valid_names = {
-            "flash": "gemini-2.5-flash",         # Nhanh, rẻ
-            "pro": "gemini-2.5-pro",             # Thông minh nhất (Dùng cho tranh biện)
-            "exp": "gemini-2.5-flash-lite"        # Bản thử nghiệm
+            "flash": "gemini-2.0-flash-exp",
+            "pro": "gemini-2.0-flash-exp",  # Dùng flash exp cho cả 2 (nhanh + rẻ)
         }
         
-        # Mặc định fallback về 2.5 Flash nếu tên sai
-        target_name = valid_names.get(model_name, "gemini-2.5-flash")
+        target_name = valid_names.get(model_name, "gemini-2.0-flash-exp")
         
         try:
             return genai.GenerativeModel(
@@ -54,8 +51,7 @@ class AI_Core:
                 generation_config=self.gen_config,
                 system_instruction=system_instr
             )
-        except Exception as e:
-            # st.warning(f"⚠️ Không thể khởi tạo model {target_name}: {e}")
+        except Exception:
             return None
 
     def generate(self, prompt, model_type="flash", system_instruction=None):
@@ -65,21 +61,11 @@ class AI_Core:
         if not self.api_ready:
             return "⚠️ API Key chưa sẵn sàng."
 
-        # ✅ CHIẾN THUẬT ƯU TIÊN: Pro -> Flash -> Exp
-        if model_type == "pro":
-            # Với task khó (Tranh biện): Ưu tiên 2.5 Pro
-            plan = [
-                ("pro", "Gemini 2.5 pro", 6), 
-                ("flash", "Gemini 2.5 Flash", 3), 
-                ("exp", "gemini-2.5-flash-lite", 3)
-            ]
-        else:
-            # Với task thường: Ưu tiên Flash cho nhanh
-            plan = [
-                ("flash", "Gemini 2.5 Flash", 2), 
-                ("exp", "gemini-2.5-flash-lite", 2),
-                ("pro", "Gemini 2.5 Pro", 6)
-            ]
+        # Chiến thuật ưu tiên: Flash (nhanh) -> Pro (dự phòng)
+        plan = [
+            ("flash", "Gemini 2.0 Flash Exp", 2), 
+            ("pro", "Gemini 2.0 Flash Exp", 2),
+        ]
 
         last_errors = []
         quota_exhausted_count = 0
@@ -88,7 +74,8 @@ class AI_Core:
             try:
                 # Khởi tạo model
                 model = self._get_model(m_type, system_instr=system_instruction)
-                if not model: continue
+                if not model: 
+                    continue
                 
                 # Gọi API
                 response = model.generate_content(prompt)
@@ -113,19 +100,16 @@ class AI_Core:
                 continue
             
             except ResourceExhausted:
-                # Lỗi hết tiền/quota -> Chờ lâu hơn một chút rồi thử model khác
                 quota_exhausted_count += 1
                 error_msg = f"{m_name}: Hết Quota (429)"
                 last_errors.append(error_msg)
                 time.sleep(base_wait_time * quota_exhausted_count)
                 
             except (ServiceUnavailable, InternalServerError):
-                # Lỗi Server Google -> Chờ ngắn
                 last_errors.append(f"{m_name}: Lỗi Server (5xx)")
                 time.sleep(2)
             
             except InvalidArgument as e:
-                # Lỗi Input -> Dừng luôn, không thử lại
                 return f"⚠️ Lỗi Input (Prompt không hợp lệ): {str(e)[:200]}"
                 
             except Exception as e:
@@ -135,36 +119,3 @@ class AI_Core:
         # Nếu thử hết các model mà vẫn lỗi
         error_summary = "\n".join(f"- {e}" for e in last_errors[-3:])
         return f"⚠️ Hệ thống đang bận hoặc gặp lỗi:\n{error_summary}\n\n💡 Vui lòng thử lại sau 1 phút."
-
-    @staticmethod
-    @st.cache_data(show_spinner=False, ttl=3600)
-    def analyze_static(text, instruction):
-        """
-        Hàm dùng riêng cho RAG (Đọc tài liệu) - Có Cache để tiết kiệm tiền
-        """
-        try:
-            api_key = st.secrets["api_keys"]["gemini_api_key"]
-            genai.configure(api_key=api_key)
-            
-            # Luôn dùng Flash cho RAG vì nó đọc context dài tốt và rẻ
-            model = genai.GenerativeModel(
-                "gemini-2.5-flash",
-                system_instruction=instruction
-            )
-            
-            # Cắt bớt nếu text quá dài (tránh lỗi quá tải)
-            max_chars = 200000 
-            truncated_text = text[:max_chars]
-            
-            if len(text) > max_chars:
-                st.warning(f"⚠️ Tài liệu quá dài, chỉ phân tích {max_chars:,} ký tự đầu.")
-            
-            response = model.generate_content(truncated_text)
-            
-            if response and hasattr(response, 'text') and response.text:
-                return response.text
-            else:
-                return "⚠️ Không có phản hồi từ AI."
-                
-        except Exception as e:
-            return f"❌ Lỗi phân tích tĩnh: {str(e)[:200]}"
