@@ -152,18 +152,161 @@ if not st.session_state.quiz_active:
     
     # ===== STUDY MODE =====
     if st.session_state.get("mode") == "study":
-        st.markdown("## 📖 Upload Sách Giáo Khoa")
+        st.markdown("## 📖 Chọn Sách Giáo Khoa")
         
+        # Chọn môn
         subject = st.selectbox(
             "Chọn môn học:",
             ["📐 Toán", "📝 Văn", "🇬🇧 Tiếng Anh", "🔬 Khoa Học Tự Nhiên", "🏛️ Lịch Sử", "🌍 Địa Lý"]
         )
         
-        uploaded_file = st.file_uploader(
-            "Upload sách (PDF/DOCX):",
-            type=["pdf", "docx"],
-            help="Tải lên sách giáo khoa hoặc sách bài tập"
-        )
+        # Map môn → folder
+        subject_to_folder = {
+            "📐 Toán": "toan",
+            "📝 Văn": "van",
+            "🇬🇧 Tiếng Anh": "tieng_anh",
+            "🔬 Khoa Học Tự Nhiên": "khoa_hoc_tu_nhien",
+            "🏛️ Lịch Sử": "lich_su",
+            "🌍 Địa Lý": "dia_ly"
+        }
+        
+        folder = subject_to_folder.get(subject, "")
+        
+        import os
+        books_path = os.path.join("books", folder)
+        
+        # Lấy danh sách sách sẵn
+        available_books = []
+        if os.path.exists(books_path):
+            available_books = [f for f in os.listdir(books_path) if f.lower().endswith(('.pdf', '.docx'))]
+            available_books.sort()
+        
+        # UI: Chọn sách sẵn hoặc upload
+        content = None
+        file_name = ""
+        
+        if available_books:
+            st.success(f"📚 Tìm thấy **{len(available_books)} sách sẵn** cho môn {subject}")
+            
+            # Radio: Chọn sách sẵn hay upload mới
+            choice = st.radio(
+                "Chọn nguồn sách:",
+                ["📖 Dùng sách sẵn trong repo", "⬆️ Upload sách mới"],
+                horizontal=True
+            )
+            
+            if choice == "📖 Dùng sách sẵn trong repo":
+                selected_book_name = st.selectbox("Chọn sách:", available_books)
+                
+                if st.button("📂 MỞ SÁCH NÀY", type="secondary", use_container_width=True):
+                    book_path = os.path.join(books_path, selected_book_name)
+                    file_name = selected_book_name
+                    
+                    with st.spinner(f"📖 Đang đọc {file_name}..."):
+                        try:
+                            from services.blocks.file_processor import doc_file
+                            
+                            # HACK: Tạo fake UploadedFile để tương thích với doc_file
+                            class FakeUploadedFile:
+                                def __init__(self, path):
+                                    self.name = os.path.basename(path)
+                                    self._path = path
+                                
+                                def read(self):
+                                    with open(self._path, 'rb') as f:
+                                        return f.read()
+                            
+                            fake_file = FakeUploadedFile(book_path)
+                            content = doc_file(fake_file)
+                            
+                            if not content:
+                                st.error("❌ Không đọc được file. Hãy thử file khác!")
+                            
+                        except Exception as e:
+                            st.error(f"❌ Lỗi đọc file: {e}")
+                            content = None
+            
+            else:  # Upload mới
+                uploaded_file = st.file_uploader(
+                    "Upload sách (PDF/DOCX):",
+                    type=["pdf", "docx"],
+                    help="Tải lên sách giáo khoa hoặc sách bài tập"
+                )
+                
+                if uploaded_file:
+                    file_name = uploaded_file.name
+                    
+                    with st.spinner(f"📖 Đang đọc {file_name}..."):
+                        from services.blocks.file_processor import doc_file
+                        content = doc_file(uploaded_file)
+                        
+                        if not content:
+                            st.error("❌ Không đọc được file. Hãy thử file khác!")
+        
+        else:
+            # Không có sách sẵn → Chỉ có option upload
+            st.warning(f"⚠️ Chưa có sách sẵn cho môn {subject}. Hãy upload sách!")
+            
+            uploaded_file = st.file_uploader(
+                "Upload sách (PDF/DOCX):",
+                type=["pdf", "docx"],
+                help="Tải lên sách giáo khoa hoặc sách bài tập"
+            )
+            
+            if uploaded_file:
+                file_name = uploaded_file.name
+                
+                with st.spinner(f"📖 Đang đọc {file_name}..."):
+                    from services.blocks.file_processor import doc_file
+                    content = doc_file(uploaded_file)
+                    
+                    if not content:
+                        st.error("❌ Không đọc được file. Hãy thử file khác!")
+        
+        # ===== NẾU ĐÃ CÓ NỘI DUNG → TẠO QUIZ =====
+        if content:
+            st.success(f"✅ Đã đọc xong **{file_name}** ({len(content):,} ký tự)")
+            
+            st.markdown("---")
+            st.markdown("### ⚙️ Cấu hình Quiz")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                chapter = st.text_input(
+                    "Nhập số chương (VD: 1, 2, 3) hoặc 'ALL' để ôn toàn môn:",
+                    "1",
+                    help="Nhập số chương bạn muốn ôn tập"
+                )
+            
+            with col2:
+                difficulty = st.select_slider(
+                    "Chọn độ khó:",
+                    options=["Easy 😊", "Medium 🤔", "Hard 😰", "Expert 💀"],
+                    value="Medium 🤔"
+                )
+            
+            num_questions = st.slider("Số câu hỏi:", 5, 20, 10)
+            
+            if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
+                with st.spinner("🤖 AI đang sinh câu hỏi... (Có thể mất 10-30 giây)"):
+                    quiz = st.session_state.quiz_engine.generate_quiz(
+                        content=content,
+                        subject=subject,
+                        chapter=chapter,
+                        difficulty=difficulty,
+                        num_questions=num_questions
+                    )
+                    
+                    if quiz:
+                        st.session_state.current_quiz = quiz
+                        st.session_state.quiz_active = True
+                        st.session_state.current_question = 0
+                        st.session_state.score = 0
+                        st.session_state.answers = []
+                        st.rerun()
+                    else:
+                        st.error("❌ Không thể tạo quiz. Hãy thử lại!")
         
         
         if uploaded_file:
