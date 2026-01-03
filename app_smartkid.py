@@ -154,6 +154,12 @@ if not st.session_state.quiz_active:
     if st.session_state.get("mode") == "study":
         st.markdown("## 📖 Chọn Sách Giáo Khoa")
         
+        # ✅ KHỞI TẠO SESSION STATE CHO CONTENT
+        if "book_content" not in st.session_state:
+            st.session_state.book_content = None
+        if "book_name" not in st.session_state:
+            st.session_state.book_name = ""
+        
         # Chọn môn
         subject = st.selectbox(
             "Chọn môn học:",
@@ -181,10 +187,6 @@ if not st.session_state.quiz_active:
             available_books = [f for f in os.listdir(books_path) if f.lower().endswith(('.pdf', '.docx'))]
             available_books.sort()
         
-        # ===== KHỞI TẠO BIẾN =====
-        content = None
-        file_name = ""
-        
         # ===== UI: CHỌN NGUỒN SÁCH =====
         if available_books:
             st.success(f"📚 Tìm thấy **{len(available_books)} sách sẵn** cho môn {subject}")
@@ -200,31 +202,28 @@ if not st.session_state.quiz_active:
                 # Chọn sách từ dropdown
                 selected_book_name = st.selectbox("Chọn sách:", available_books)
                 
+                # ✅ NÚT MỞ SÁCH
                 if st.button("📂 MỞ SÁCH NÀY", type="secondary", use_container_width=True):
                     book_path = os.path.join(books_path, selected_book_name)
-                    file_name = selected_book_name
-    
-                    with st.spinner(f"📖 Đang đọc {file_name}..."):
+                    
+                    with st.spinner(f"📖 Đang đọc {selected_book_name}..."):
                         try:
                             from services.blocks.file_processor import doc_file
-            
-                            # ✅ ĐƠN GIẢN: Truyền path trực tiếp
+                            
+                            # ✅ ĐỌC TRỰC TIẾP TỪ PATH
                             content = doc_file(book_path)
-            
-                            # ✅ DEBUG: Hiện kết quả
-                            if content:
-                                st.success(f"✅ Đọc thành công! Độ dài: {len(content):,} ký tự")
+                            
+                            if content and len(content) > 100:
+                                # ✅ LƯU VÀO SESSION STATE
+                                st.session_state.book_content = content
+                                st.session_state.book_name = selected_book_name
+                                st.success(f"✅ Đã đọc xong **{selected_book_name}** ({len(content):,} ký tự)")
+                                st.rerun()  # Rerun để hiện UI tạo quiz
                             else:
-                                st.error("❌ doc_file() trả về rỗng!")
-            
+                                st.error("❌ File rỗng hoặc không đọc được!")
+                            
                         except Exception as e:
-                            st.error(f"❌ Lỗi đọc file: {type(e).__name__}: {e}")
-            
-                            # ✅ DEBUG: Hiện full traceback
-                            import traceback
-                            st.code(traceback.format_exc())
-            
-                            content = None
+                            st.error(f"❌ Lỗi đọc file: {e}")
             
             else:  # Upload mới
                 uploaded_file = st.file_uploader(
@@ -235,14 +234,17 @@ if not st.session_state.quiz_active:
                 )
                 
                 if uploaded_file:
-                    file_name = uploaded_file.name
-                    
-                    with st.spinner(f"📖 Đang đọc {file_name}..."):
+                    with st.spinner(f"📖 Đang đọc {uploaded_file.name}..."):
                         from services.blocks.file_processor import doc_file
                         content = doc_file(uploaded_file)
                         
-                        if not content:
-                            st.error("❌ Không đọc được file. Hãy thử file khác!")
+                        if content and len(content) > 100:
+                            # ✅ LƯU VÀO SESSION STATE
+                            st.session_state.book_content = content
+                            st.session_state.book_name = uploaded_file.name
+                            st.success(f"✅ Đã đọc xong **{uploaded_file.name}** ({len(content):,} ký tự)")
+                        else:
+                            st.error("❌ File rỗng hoặc không đọc được!")
         
         else:
             # Không có sách sẵn → Chỉ có option upload
@@ -256,20 +258,22 @@ if not st.session_state.quiz_active:
             )
             
             if uploaded_file:
-                file_name = uploaded_file.name
-                
-                with st.spinner(f"📖 Đang đọc {file_name}..."):
+                with st.spinner(f"📖 Đang đọc {uploaded_file.name}..."):
                     from services.blocks.file_processor import doc_file
                     content = doc_file(uploaded_file)
                     
-                    if not content:
-                        st.error("❌ Không đọc được file. Hãy thử file khác!")
+                    if content and len(content) > 100:
+                        # ✅ LƯU VÀO SESSION STATE
+                        st.session_state.book_content = content
+                        st.session_state.book_name = uploaded_file.name
+                        st.success(f"✅ Đã đọc xong **{uploaded_file.name}** ({len(content):,} ký tự)")
+                    else:
+                        st.error("❌ File rỗng hoặc không đọc được!")
         
-        # ===== NẾU ĐÃ CÓ NỘI DUNG → TẠO QUIZ =====
-        if content and len(content) > 100:
-            st.success(f"✅ Đã đọc xong **{file_name}** ({len(content):,} ký tự)")
-            
+        # ===== NẾU ĐÃ CÓ NỘI DUNG TRONG SESSION → HIỆN UI TẠO QUIZ =====
+        if st.session_state.book_content and len(st.session_state.book_content) > 100:
             st.markdown("---")
+            st.markdown(f"### 📖 Đang làm việc với: **{st.session_state.book_name}**")
             st.markdown("### ⚙️ Cấu hình Quiz")
             
             col1, col2 = st.columns(2)
@@ -290,25 +294,36 @@ if not st.session_state.quiz_active:
             
             num_questions = st.slider("Số câu hỏi:", 5, 20, 10)
             
-            if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
-                with st.spinner("🤖 AI đang sinh câu hỏi... (Có thể mất 10-30 giây)"):
-                    quiz = st.session_state.quiz_engine.generate_quiz(
-                        content=content,
-                        subject=subject,
-                        chapter=chapter,
-                        difficulty=difficulty,
-                        num_questions=num_questions
-                    )
-                    
-                    if quiz:
-                        st.session_state.current_quiz = quiz
-                        st.session_state.quiz_active = True
-                        st.session_state.current_question = 0
-                        st.session_state.score = 0
-                        st.session_state.answers = []
-                        st.rerun()
-                    else:
-                        st.error("❌ Không thể tạo quiz. Hãy thử lại!")
+            # ✅ NÚT TẠO QUIZ
+            col_btn1, col_btn2 = st.columns([3, 1])
+            
+            with col_btn1:
+                if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
+                    with st.spinner("🤖 AI đang sinh câu hỏi... (Có thể mất 10-30 giây)"):
+                        quiz = st.session_state.quiz_engine.generate_quiz(
+                            content=st.session_state.book_content,  # ✅ Dùng từ session_state
+                            subject=subject,
+                            chapter=chapter,
+                            difficulty=difficulty,
+                            num_questions=num_questions
+                        )
+                        
+                        if quiz:
+                            st.session_state.current_quiz = quiz
+                            st.session_state.quiz_active = True
+                            st.session_state.current_question = 0
+                            st.session_state.score = 0
+                            st.session_state.answers = []
+                            st.rerun()
+                        else:
+                            st.error("❌ Không thể tạo quiz. Hãy thử lại!")
+            
+            with col_btn2:
+                # ✅ NÚT XÓA SÁCH (để chọn sách khác)
+                if st.button("🗑️ Đổi sách", use_container_width=True):
+                    st.session_state.book_content = None
+                    st.session_state.book_name = ""
+                    st.rerun()
     
     # ===== CHALLENGE MODE =====
     elif st.session_state.get("mode") == "challenge":
