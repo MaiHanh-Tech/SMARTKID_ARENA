@@ -60,7 +60,7 @@ st.markdown("""
 
 # ===== KHỞI TẠO SESSION STATE =====
 if "player" not in st.session_state:
-    st.session_state.player = PlayerProfile("default_player")
+    st.session_state.player = PlayerProfile("NHIMXU")
 
 if "quiz_engine" not in st.session_state:
     st.session_state.quiz_engine = QuizEngine()
