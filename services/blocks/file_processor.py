@@ -1,58 +1,57 @@
 from pypdf import PdfReader
 from docx import Document
 import re
-import pypinyin
 
 def doc_file(uploaded_file):
-    if not uploaded_file: return ""
-    ext = uploaded_file.name.split('.')[-1].lower()
+    """
+    Đọc nội dung từ file upload hoặc file path
+    Hỗ trợ: PDF, DOCX, TXT, MD
+    """
+    if not uploaded_file: 
+        return ""
+    
     try:
+        # Lấy extension
+        if hasattr(uploaded_file, 'name'):
+            ext = uploaded_file.name.split('.')[-1].lower()
+        else:
+            ext = str(uploaded_file).split('.')[-1].lower()
+        
         if ext == "pdf":
             reader = PdfReader(uploaded_file)
-            return "\n".join([page.extract_text() or "" for page in reader.pages])
+            text = "\n".join([page.extract_text() or "" for page in reader.pages])
+            return clean_text(text)
+            
         elif ext == "docx":
             doc = Document(uploaded_file)
-            return "\n".join([p.text for p in doc.paragraphs])
+            text = "\n".join([p.text for p in doc.paragraphs])
+            return clean_text(text)
+            
         elif ext in ["txt", "md", "html"]:
-            return str(uploaded_file.read(), "utf-8")
-    except:
+            if hasattr(uploaded_file, 'read'):
+                content = uploaded_file.read()
+                if isinstance(content, bytes):
+                    return clean_text(content.decode('utf-8'))
+                return clean_text(content)
+            else:
+                with open(uploaded_file, 'r', encoding='utf-8') as f:
+                    return clean_text(f.read())
+                    
+    except Exception as e:
+        print(f"Lỗi đọc file: {e}")
         return ""
+    
     return ""
 
-def clean_pdf_text(text):
-    if not text: return ""
-    text = re.sub(r'(\w+)-\s*\n\s*(\w+)', r'\1\2', text)
-    text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+def clean_text(text):
+    """Làm sạch văn bản (loại bỏ ký tự lạ, khoảng trắng thừa)"""
+    if not text: 
+        return ""
+    
+    # Loại bỏ ký tự điều khiển
+    text = re.sub(r'[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f-\x9f]', '', text)
+    
+    # Chuẩn hóa khoảng trắng
     text = re.sub(r'\s+', ' ', text)
-    text = text.replace('•', '•')
-    # common PDF split fixes
-    text = text.replace('impor tant', 'important').replace('scienti c', 'scientific')
+    
     return text.strip()
-
-def split_smart_chunks(text, chunk_size=1500, max_total_chars=50000):
-    if not text:
-        return []
-    if len(text) > max_total_chars:
-        text = text[:max_total_chars]
-    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z"\'(])', text)
-    chunks = []
-    current = ""
-    for s in sentences:
-        if len(current) + len(s) < chunk_size:
-            current += s + " "
-        else:
-            if current:
-                chunks.append(current.strip())
-            current = s + " "
-    if current:
-        chunks.append(current.strip())
-    return chunks
-
-def convert_to_pinyin(text):
-    if not text: return ""
-    if any('\u4e00' <= ch <= '\u9fff' for ch in text):
-        try:
-            return ' '.join([i[0] for i in pypinyin.pinyin(text, style=pypinyin.TONE)])
-        except:
-            return ""
-    return ""
