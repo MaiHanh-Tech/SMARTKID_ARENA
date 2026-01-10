@@ -581,8 +581,8 @@ else:
             
             num_questions = st.slider("Số câu hỏi:", 5, 20, 10)
             
-            col_btn1, col_btn2 = st.columns([3, 1])
-            
+    col_btn1, col_btn2 = st.columns([3, 1])
+
             with col_btn1:
                 if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
                     with st.spinner("🤖 AI đang sinh câu hỏi..."):
@@ -594,19 +594,30 @@ else:
                                 num_questions=num_questions,
                                 focus_mode=st.session_state.focus_mode
                             )
-                            
+
                             if quiz and len(quiz) > 0:
                                 st.session_state.current_quiz = quiz
                                 st.session_state.quiz_active = True
 
-                                st.session_state.current_session_id = st.session_state.history_tracker.create_session(
-                                    subject=subject,
-                                    chapter=chapter,
-                                    difficulty=difficulty
+                                st.session_state.current_session_id = (
+                                    st.session_state.history_tracker.create_session(
+                                        subject=subject,
+                                        chapter=chapter,
+                                        difficulty=difficulty
+                                    )
                                 )
-                            
+
                                 st.rerun()
-        
+
+                            else:
+                                st.warning("Không tạo được câu hỏi nào. Vui lòng thử lại hoặc chọn chương khác.")
+
+                        except Exception as e:
+                            st.error(f"❌ Lỗi khi tạo quiz: {str(e)}")
+                            # Optional: hiện traceback nếu bạn đang debug
+                            # import traceback
+                            # st.error(traceback.format_exc())
+
             with col_btn2:
                 if st.button("🗑️ Đổi sách", use_container_width=True):
                     st.session_state.book_content = None
