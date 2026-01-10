@@ -80,11 +80,24 @@ st.markdown("""
 
 # ===== KHỞI TẠO SESSION STATE =====
 def init_session_state():
-    """Khởi tạo tất cả session state variables"""
-    
-    # Player profile
     if "player" not in st.session_state:
-        st.session_state.player = PlayerProfile("NHIMXU")
+        # Kiểm tra xem đã có tên trong session chưa
+        if "player_name" not in st.session_state:
+            # Hiển thị form nhập tên ngay đầu app
+            st.title("Chào mừng đến SmartKid Arena! 🎮")
+            player_name = st.text_input("Nhập tên của bạn:", placeholder="Ví dụ: Minh, Lan, Bé Bảo...")
+            start_button = st.button("Bắt đầu chơi →", type="primary")
+            
+            if start_button and player_name.strip():
+                st.session_state.player_name = player_name.strip()
+                st.rerun()  # Reload để tạo player
+            elif start_button:
+                st.error("Vui lòng nhập tên nhé!")
+            # Dừng lại để người dùng nhập tên
+            st.stop()
+        
+        # Khi đã có tên → tạo profile
+        st.session_state.player = PlayerProfile(st.session_state.player_name)
     
     # Quiz engine (cũ)
     if "quiz_engine" not in st.session_state:
