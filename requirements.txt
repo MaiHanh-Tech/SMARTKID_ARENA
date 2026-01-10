@@ -9,3 +9,4 @@ supabase
 python-dateutil
 pypdf
 openpyxl
+fpdf2
