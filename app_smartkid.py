@@ -16,14 +16,11 @@ import os
 from quiz_engine import QuizEngine
 from game_mechanics import GameMechanics
 from player_profile import PlayerProfile
-
-# ===== IMPORT CÁC MODULE MỚI TRONG services/blocks =====
 from services.blocks.history_tracker import LearningHistoryTracker
 from services.blocks.weakness_analyzer import WeaknessAnalyzer
 from services.blocks.adaptive_quiz_engine import AdaptiveQuizEngine
 from services.blocks.file_processor import doc_file
-
-# ===== IMPORT DASHBOARD =====
+from services.report_generator import ReportGenerator
 from pages.student_dashboard import render_weakness_dashboard
 
 # ===== CẤU HÌNH TRANG =====
@@ -210,9 +207,7 @@ with st.sidebar:
         st.metric("📝 Tổng câu đã làm", overall_stats['total_questions'])
         st.metric("🎯 Độ chính xác", f"{overall_stats['accuracy']:.1%}")
 
-# ===== MAIN CONTENT =====
 
-# ===== NẾU ĐANG XEM DASHBOARD =====
 if st.session_state.show_dashboard:
     render_weakness_dashboard(st.session_state.weakness_analyzer)
 
@@ -371,6 +366,8 @@ elif st.session_state.quiz_active:
                     st.markdown(f"   - Đáp án đúng: {ans['correct']}")
                 st.markdown(f"   - Thời gian: {ans['time_spent']:.1f}s")
                 st.markdown("---")
+
+        
         
         # ===== THÊM MỚI: Phân tích nhanh =====
         st.markdown("### 🔍 Phân Tích Nhanh")
@@ -379,6 +376,26 @@ elif st.session_state.quiz_active:
         
         if priority_topics:
             st.warning(f"💡 **Gợi ý:** Bạn nên tập trung vào: **{', '.join(priority_topics)}**")
+
+        # ── THÊM ĐÂY: NÚT XUẤT BÁO CÁO PDF ────────────────────────────
+        st.markdown("---")
+        if st.button("📄 Xuất báo cáo PDF", type="primary", use_container_width=True):
+            with st.spinner("Đang tạo báo cáo..."):
+                from services.report_generator import ReportGenerator  # import ở đây hoặc đầu file
+                    
+                pdf_file = ReportGenerator.generate_quiz_report(
+                    player=st.session_state.player,
+                    quiz_results=st.session_state.answers,  # list các câu trả lời
+                    weakness_topics=st.session_state.weakness_analyzer.get_priority_topics(5)
+                )
+                    
+                with open(pdf_file, "rb") as f:
+                    st.download_button(
+                        label="Tải báo cáo PDF về máy",
+                        data=f,
+                        file_name=pdf_file,
+                        mime="application/pdf"
+                    )
         
         # Buttons
         col1, col2, col3 = st.columns(3)
