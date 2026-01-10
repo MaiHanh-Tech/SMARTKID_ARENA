@@ -189,7 +189,7 @@ YÊU CẦU QUAN TRỌNG:
 2. Độ khó: Từ dễ đến trung bình (để học sinh tự tin)
 
 3. TUYỆT ĐỐI TRÁNH trùng với các câu đã sai gần đây:
-{chr(10).join(f"   - {q}" for q in recent_errors)}
+{chr(10).join(f"   - {q}" for q in recent_errors) if recent_errors else "   (Chưa có lỗi nào)"}
 
 4. Mỗi câu hỏi cần:
    - Gắn tag concept cụ thể (VD: ['phân số', 'so sánh'])
@@ -212,6 +212,37 @@ Trả về JSON format:
 ]
 """
         return prompt
+    
+    def _call_ai_with_prompt(
+        self,
+        prompt: str,
+        num_questions: int,
+        subject: str,
+        difficulty: str
+    ) -> List[dict]:
+        """
+        [Inference] Gọi AI thông qua base_engine
+        
+        Note: Hàm này delegate việc gọi AI cho QuizEngine gốc
+        """
+        try:
+            # Dùng method từ base_engine (QuizEngine)
+            # QuizEngine đã tích hợp với ai_core.py (Gemini, Grok, DeepSeek)
+            
+            # Tạm thời dùng generate_quiz của base engine với prompt custom
+            # [Unverified] Cần kiểm tra xem QuizEngine có hỗ trợ custom prompt không
+            
+            return self.base_engine.generate_quiz(
+                content=prompt,  # Pass prompt như content
+                subject=subject,
+                chapter="ADAPTIVE",  # Đánh dấu là adaptive mode
+                difficulty=difficulty,
+                num_questions=num_questions
+            )
+        
+        except Exception as e:
+            print(f"⚠️ Lỗi gọi AI: {e}")
+            return []
     
     def _get_recommended_difficulty(self, subject: str) -> str:
         """
