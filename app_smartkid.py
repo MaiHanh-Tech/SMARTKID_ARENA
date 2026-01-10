@@ -471,7 +471,7 @@ else:
         # Chọn môn
         subject = st.selectbox(
             "Chọn môn học:",
-            ["📐 Toán", "📝 Văn", "🇬🇧 Tiếng Anh", "🔬 Khoa Học Tự Nhiên", "🏛️ Lịch Sử", "🌍 Địa Lý"]
+            ["📐 Toán", "📝 Văn", "🇬🇧 Tiếng Anh", "🔬 Khoa Học Tự Nhiên", "🏛️ Sử Địa", "🌍  Công Nghệ"]
         )
         
         st.session_state.current_subject = subject
@@ -482,8 +482,8 @@ else:
             "📝 Văn": "van",
             "🇬🇧 Tiếng Anh": "tieng_anh",
             "🔬 Khoa Học Tự Nhiên": "khoa_hoc_tu_nhien",
-            "🏛️ Lịch Sử": "lich_su",
-            "🌍 Địa Lý": "dia_ly"
+            "🏛️ Sử Địa": "su_dia",
+            "🌍 Công Nghệ": "cong_nghe"
         }
         
         folder = subject_to_folder.get(subject, "")
