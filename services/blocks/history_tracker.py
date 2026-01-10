@@ -84,3 +84,23 @@ class LearningHistoryTracker:
         """Lưu lịch sử vào file"""
         with open(self.history_file, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, ensure_ascii=False, indent=2)
+
+
+    def get_overall_stats(self):
+        total_questions = 0
+        correct_count = 0
+
+        # Duyệt qua tất cả các session
+        for session in self.data.get("sessions", []):
+            for attempt in session.get("attempts", []):
+                total_questions += 1
+                if attempt.get("is_correct", False):
+                    correct_count += 1
+
+        accuracy = (correct_count / total_questions * 100) if total_questions > 0 else 0.0
+
+        return {
+            "total_questions": total_questions,
+            "correct_count": correct_count,    # optional, có thể thêm
+            "accuracy": accuracy
+        }
