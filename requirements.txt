@@ -1,17 +1,7 @@
-streamlit
-google-generativeai
-supabase
-pypdf
-python-docx
-openai
+streamlit>=1.28.0
 pandas>=2.0.0
 plotly>=5.17.0
-anthropic>=0.7.0
-JSON handling (built-in)
-datetime (built-in)
-uuid (built-in)
-Export to CSV (pandas đã có)
-Export to PDF
-reportlab>=4.0.0  # Uncomment nếu muốn export PDF reports
-pytest>=7.0.0  # Uncomment nếu muốn unit tests
-black>=23.0.0  # Uncomment nếu muốn code formatter
+python-docx>=0.8.11
+PyPDF2>=3.0.0
+google-generativeai>=0.3.0
+openai>=1.3.0
