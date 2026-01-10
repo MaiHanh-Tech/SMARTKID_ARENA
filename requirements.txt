@@ -8,3 +8,4 @@ openai
 supabase          
 python-dateutil
 pypdf
+openpyxl
