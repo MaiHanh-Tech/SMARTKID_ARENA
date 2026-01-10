@@ -96,8 +96,9 @@ def init_session_state():
             # Dừng lại để người dùng nhập tên
             st.stop()
         
-        # Khi đã có tên → tạo profile
-        st.session_state.player = PlayerProfile(st.session_state.player_name)
+        # Khi đã có tên → tạo hoặc load profile từ Supabase
+        player_name = st.session_state.player_name
+        st.session_state.player = PlayerProfile(player_name)
     
     # Quiz engine (cũ)
     if "quiz_engine" not in st.session_state:
