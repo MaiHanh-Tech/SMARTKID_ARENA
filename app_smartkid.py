@@ -581,8 +581,7 @@ else:
             
             num_questions = st.slider("Số câu hỏi:", 5, 20, 10)
             
-    col_btn1, col_btn2 = st.columns([3, 1])
-
+            col_btn1, col_btn2 = st.columns([3, 1])
             with col_btn1:
                 if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
                     with st.spinner("🤖 AI đang sinh câu hỏi..."):
