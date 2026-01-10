@@ -1,6 +1,8 @@
 """
 SmartKid Arena - Game-based Learning Platform
 Hệ thống học tập thích ứng với AI
+
+ROOT LEVEL VERSION - app_smartkid.py ở ngoài folder services
 """
 
 import streamlit as st
@@ -10,12 +12,12 @@ from datetime import datetime
 import uuid
 import os
 
-# ===== IMPORT CÁC MODULE CŨ =====
+# ===== IMPORT CÁC MODULE Ở ROOT LEVEL =====
 from quiz_engine import QuizEngine
 from game_mechanics import GameMechanics
 from player_profile import PlayerProfile
 
-# ===== IMPORT CÁC MODULE MỚI =====
+# ===== IMPORT CÁC MODULE MỚI TRONG services/blocks =====
 from services.blocks.history_tracker import LearningHistoryTracker
 from services.blocks.weakness_analyzer import WeaknessAnalyzer
 from services.blocks.adaptive_quiz_engine import AdaptiveQuizEngine
@@ -150,7 +152,7 @@ def init_session_state():
         st.session_state.mode = None
     
     if "focus_mode" not in st.session_state:
-        st.session_state.focus_mode = "adaptive"  # 'adaptive', 'review_weak', 'mixed'
+        st.session_state.focus_mode = "adaptive"
 
 # Gọi init
 init_session_state()
@@ -241,7 +243,7 @@ elif st.session_state.quiz_active:
             key=f"q_{q_index}"
         )
         
-        # Confidence level (optional - để phân tích sau)
+        # Confidence level
         confidence = st.select_slider(
             "Bạn tự tin bao nhiêu với đáp án này?",
             options=["Không chắc 😕", "Tạm được 😐", "Khá chắc 😊", "Rất chắc 😎"],
@@ -259,7 +261,7 @@ elif st.session_state.quiz_active:
                 # Check answer
                 correct = selected == question_data['correct_answer']
                 
-                # Map confidence to simple format
+                # Map confidence
                 confidence_map = {
                     "Không chắc 😕": "low",
                     "Tạm được 😐": "medium",
@@ -275,9 +277,9 @@ elif st.session_state.quiz_active:
                         'question': question_data['question'],
                         'subject': st.session_state.get('current_subject', 'Unknown'),
                         'chapter': st.session_state.get('current_chapter', 'Unknown'),
-                        'topic': question_data.get('topic', 'General'),  # AI cần return field này
+                        'topic': question_data.get('topic', 'General'),
                         'difficulty': st.session_state.get('current_difficulty', 'Medium 🤔'),
-                        'concept_tags': question_data.get('concept_tags', [])  # AI cần return field này
+                        'concept_tags': question_data.get('concept_tags', [])
                     },
                     answer_data={
                         'selected': selected,
@@ -288,7 +290,7 @@ elif st.session_state.quiz_active:
                     }
                 )
                 
-                # Save to answers list (for display)
+                # Save to answers list
                 st.session_state.answers.append({
                     'question': question_data['question'],
                     'selected': selected,
@@ -304,8 +306,6 @@ elif st.session_state.quiz_active:
                     st.session_state.score += 10
                 else:
                     st.error(f"❌ SAI RỒI! Đáp án đúng: {question_data['correct_answer']}")
-                    
-                    # Hiển thị giải thích nếu có
                     if 'explanation' in question_data:
                         with st.expander("💡 Xem giải thích"):
                             st.info(question_data['explanation'])
@@ -375,7 +375,6 @@ elif st.session_state.quiz_active:
         # ===== THÊM MỚI: Phân tích nhanh =====
         st.markdown("### 🔍 Phân Tích Nhanh")
         
-        # Lấy priority topics
         priority_topics = st.session_state.weakness_analyzer.get_priority_topics(top_n=3)
         
         if priority_topics:
@@ -403,7 +402,7 @@ elif st.session_state.quiz_active:
                 st.session_state.mode = None
                 st.rerun()
 
-# ===== TRANG CHỦ: MODE SELECT =====
+# ===== TRANG CHỦ =====
 else:
     if not st.session_state.mode:
         st.markdown("## 🎯 Chọn Nhiệm Vụ")
@@ -444,7 +443,6 @@ else:
             ["📐 Toán", "📝 Văn", "🇬🇧 Tiếng Anh", "🔬 Khoa Học Tự Nhiên", "🏛️ Lịch Sử", "🌍 Địa Lý"]
         )
         
-        # Lưu subject vào session state
         st.session_state.current_subject = subject
         
         # Map môn → folder
@@ -460,17 +458,16 @@ else:
         folder = subject_to_folder.get(subject, "")
         books_path = os.path.join("books", folder)
         
-        # Lấy danh sách sách sẵn
+        # Lấy danh sách sách
         available_books = []
         if os.path.exists(books_path):
             available_books = [f for f in os.listdir(books_path) if f.lower().endswith(('.pdf', '.docx'))]
             available_books.sort()
         
-        # ===== UI: CHỌN NGUỒN SÁCH =====
+        # UI chọn sách
         if available_books:
             st.success(f"📚 Tìm thấy **{len(available_books)} sách sẵn** cho môn {subject}")
             
-            # Radio: Chọn sách sẵn hay upload mới
             choice = st.radio(
                 "Chọn nguồn sách:",
                 ["📖 Dùng sách sẵn trong repo", "⬆️ Upload sách mới"],
@@ -478,10 +475,8 @@ else:
             )
             
             if choice == "📖 Dùng sách sẵn trong repo":
-                # Chọn sách từ dropdown
                 selected_book_name = st.selectbox("Chọn sách:", available_books)
                 
-                # NÚT MỞ SÁCH
                 if st.button("📂 MỞ SÁCH NÀY", type="secondary", use_container_width=True):
                     book_path = os.path.join(books_path, selected_book_name)
                     
@@ -496,15 +491,13 @@ else:
                                 st.rerun()
                             else:
                                 st.error("❌ File rỗng hoặc không đọc được!")
-                        
                         except Exception as e:
                             st.error(f"❌ Lỗi đọc file: {e}")
             
-            else:  # Upload mới
+            else:
                 uploaded_file = st.file_uploader(
                     "Upload sách (PDF/DOCX):",
                     type=["pdf", "docx"],
-                    help="Tải lên sách giáo khoa hoặc sách bài tập",
                     key="upload_with_repo"
                 )
                 
@@ -516,17 +509,13 @@ else:
                             st.session_state.book_content = content
                             st.session_state.book_name = uploaded_file.name
                             st.success(f"✅ Đã đọc xong **{uploaded_file.name}** ({len(content):,} ký tự)")
-                        else:
-                            st.error("❌ File rỗng hoặc không đọc được!")
         
         else:
-            # Không có sách sẵn → Chỉ có option upload
             st.warning(f"⚠️ Chưa có sách sẵn cho môn {subject}. Hãy upload sách!")
             
             uploaded_file = st.file_uploader(
                 "Upload sách (PDF/DOCX):",
                 type=["pdf", "docx"],
-                help="Tải lên sách giáo khoa hoặc sách bài tập",
                 key="upload_no_repo"
             )
             
@@ -538,15 +527,13 @@ else:
                         st.session_state.book_content = content
                         st.session_state.book_name = uploaded_file.name
                         st.success(f"✅ Đã đọc xong **{uploaded_file.name}** ({len(content):,} ký tự)")
-                    else:
-                        st.error("❌ File rỗng hoặc không đọc được!")
         
-        # ===== NẾU ĐÃ CÓ NỘI DUNG → HIỆN UI TẠO QUIZ =====
+        # UI tạo quiz
         if st.session_state.book_content and len(st.session_state.book_content) > 100:
             st.markdown("---")
             st.markdown(f"### 📖 Đang làm việc với: **{st.session_state.book_name}**")
             
-            # ===== THÊM MỚI: SMART RECOMMENDATIONS =====
+            # Smart recommendations
             priority_topics = st.session_state.weakness_analyzer.get_priority_topics(top_n=3)
             
             if priority_topics:
@@ -554,7 +541,7 @@ else:
             
             st.markdown("### ⚙️ Cấu hình Quiz")
             
-            # ===== THÊM MỚI: Focus Mode Selector =====
+            # Focus mode
             focus_mode = st.radio(
                 "🎯 Chế độ học:",
                 [
@@ -563,11 +550,9 @@ else:
                     "🎲 Tổng hợp ngẫu nhiên",
                     "🔥 Thử thách (Khó)"
                 ],
-                horizontal=True,
-                help="AI sẽ sinh câu hỏi phù hợp với khả năng của bạn"
+                horizontal=True
             )
             
-            # Map focus mode
             focus_mode_map = {
                 "🤖 Thích ứng (AI tự động)": "adaptive",
                 "💪 Tập trung điểm yếu": "review_weak",
@@ -579,15 +564,10 @@ else:
             col1, col2 = st.columns(2)
             
             with col1:
-                chapter = st.text_input(
-                    "Nhập số chương (VD: 1, 2, 3) hoặc 'ALL' để ôn toàn môn:",
-                    "1",
-                    help="Nhập số chương bạn muốn ôn tập"
-                )
+                chapter = st.text_input("Nhập số chương (VD: 1, 2, 3) hoặc 'ALL':", "1")
                 st.session_state.current_chapter = chapter
             
             with col2:
-                # Nếu focus_mode = challenge thì force Hard
                 if st.session_state.focus_mode == "challenge":
                     difficulty = "Hard 😰"
                     st.info("🔥 Độ khó: **Hard 😰** (Chế độ Thử thách)")
@@ -601,13 +581,11 @@ else:
             
             num_questions = st.slider("Số câu hỏi:", 5, 20, 10)
             
-            # NÚT TẠO QUIZ
             col_btn1, col_btn2 = st.columns([3, 1])
             
             with col_btn1:
                 if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
-                    with st.spinner("🤖 AI đang sinh câu hỏi... (Có thể mất 10-30 giây)"):
-                        # ===== SỬ DỤNG ADAPTIVE ENGINE =====
+                    with st.spinner("🤖 AI đang sinh câu hỏi..."):
                         try:
                             quiz = st.session_state.adaptive_engine.generate_adaptive_quiz(
                                 content=st.session_state.book_content,
@@ -620,80 +598,30 @@ else:
                             if quiz and len(quiz) > 0:
                                 st.session_state.current_quiz = quiz
                                 st.session_state.quiz_active = True
-                                st.session_state.current_question = 0
-                                st.session_state.score = 0
-                                st.session_state.answers = []
-                                
-                                # Tạo session ID mới
+
                                 st.session_state.current_session_id = st.session_state.history_tracker.create_session(
                                     subject=subject,
                                     chapter=chapter,
                                     difficulty=difficulty
                                 )
-                                
-                                st.success("✅ Quiz đã sẵn sàng! Bắt đầu thôi!")
-                                time.sleep(1)
-                                st.rerun()
-                            else:
-                                st.error("❌ Không thể tạo quiz. Hãy thử lại!")
-                        
-                        except Exception as e:
-                            st.error(f"❌ Lỗi khi tạo quiz: {e}")
                             
-                            # Fallback: Dùng engine cũ
-                            st.warning("⚠️ Đang dùng chế độ dự phòng...")
-                            quiz = st.session_state.quiz_engine.generate_quiz(
-                                content=st.session_state.book_content,
-                                subject=subject,
-                                chapter=chapter,
-                                difficulty=difficulty,
-                                num_questions=num_questions
-                            )
-                            
-                            if quiz:
-                                st.session_state.current_quiz = quiz
-                                st.session_state.quiz_active = True
-                                st.session_state.current_question = 0
-                                st.session_state.score = 0
-                                st.session_state.answers = []
-                                
-                                # Tạo session ID mới
-                                st.session_state.current_session_id = st.session_state.history_tracker.create_session(
-                                    subject=subject,
-                                    chapter=chapter,
-                                    difficulty=difficulty
-                                )
-                                
                                 st.rerun()
-            
+        
             with col_btn2:
-                # NÚT XÓA SÁCH (để chọn sách khác)
                 if st.button("🗑️ Đổi sách", use_container_width=True):
                     st.session_state.book_content = None
                     st.session_state.book_name = ""
                     st.rerun()
-    
+
     # ===== CHALLENGE MODE =====
     elif st.session_state.mode == "challenge":
         st.markdown("## ⚔️ Đấu Trường Tri Thức")
-        
-        st.info("🚧 **Coming Soon!** Tính năng đang được phát triển...")
-        
-        st.markdown("""
-        ### 🎮 Các tính năng sắp ra mắt:
-        
-        - 🏆 **Boss Battles**: Đấu với các Boss AI ngày càng khó
-        - 📊 **Leaderboard**: Bảng xếp hạng toàn cầu
-        - 🎁 **Daily Challenges**: Thử thách mỗi ngày với phần quà hấp dẫn
-        - 👥 **Multiplayer**: Thi đấu trực tiếp với bạn bè
-        - 🎭 **Special Events**: Sự kiện đặc biệt theo mùa
-        """)
-        
+        st.info("🚧 Coming Soon!")
+    
         if st.button("🏠 Quay lại", use_container_width=True):
             st.session_state.mode = None
             st.rerun()
-
-
+            
 # ===== FOOTER =====
 st.markdown("---")
 st.markdown("""
