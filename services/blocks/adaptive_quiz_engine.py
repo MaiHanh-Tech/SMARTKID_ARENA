@@ -226,22 +226,31 @@ Trả về JSON format:
         Note: Hàm này delegate việc gọi AI cho QuizEngine gốc
         """
         try:
-            # Dùng method từ base_engine (QuizEngine)
-            # QuizEngine đã tích hợp với ai_core.py (Gemini, Grok, DeepSeek)
-            
-            # Tạm thời dùng generate_quiz của base engine với prompt custom
-            # [Unverified] Cần kiểm tra xem QuizEngine có hỗ trợ custom prompt không
-            
-            return self.base_engine.generate_quiz(
-                content=prompt,  # Pass prompt như content
-                subject=subject,
-                chapter="ADAPTIVE",  # Đánh dấu là adaptive mode
-                difficulty=difficulty,
-                num_questions=num_questions
-            )
+            # Check xem base_engine có method generate_adaptive_quiz không
+            if hasattr(self.base_engine, 'generate_adaptive_quiz'):
+                # Dùng method chuyên biệt cho adaptive (mới nhất)
+                return self.base_engine.generate_adaptive_quiz(
+                    content=prompt,
+                    subject=subject,
+                    weak_topics=[],  # Đã có trong prompt
+                    recent_errors=[],  # Đã có trong prompt
+                    num_questions=num_questions,
+                    difficulty=difficulty
+                )
+            else:
+                # Fallback: Dùng generate_quiz thông thường với chapter="ADAPTIVE"
+                return self.base_engine.generate_quiz(
+                    content=prompt,  # Pass prompt như content
+                    subject=subject,
+                    chapter="ADAPTIVE",  # Đánh dấu là adaptive mode
+                    difficulty=difficulty,
+                    num_questions=num_questions
+                )
         
         except Exception as e:
             print(f"⚠️ Lỗi gọi AI: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     def _get_recommended_difficulty(self, subject: str) -> str:
