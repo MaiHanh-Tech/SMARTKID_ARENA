@@ -1,8 +1,3 @@
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
-Trung Tâm Gia Sư Tài Năng Việt 
- https://giasudaykem.com.vn/tai-lieu-mon-tieng-anh-lop-8.html
-100 CÂU TRẮC NGHIỆM TIẾNG anh 8
-Thời gian:120 phút
 I. Choose the word that has underlined part pronounced differently from the others.
 1. A. page B. village C. luggage D. heritage
 2. A. sugar B. sorry C. seaside D. summer
@@ -37,7 +32,6 @@ III.Choose the word whose main stress is placed differently from the others.
 19. A. exhibition B. introduction C. emigration D. stationery
 20. A. annoy B. enough C. lucky D.reserved 
 21. A. frying B. towel C. socket D.include
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
 IV. Choose the word or phrase that best completes each unfinished sentence below or 
 substitutes for the underlined word or phrase. 
 22. They have never come ............................ such a beautiful village before.
@@ -80,7 +74,7 @@ A. is B. isn’t C. were D. weren’t
 40. If you move to your left, you_____the church.
  A. will see B. are seeing C. has seen D. see
 41. I forgot to thank them_____ helping me.
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
+
  A. about B. for C. of D. on
 42. Is the rubbish______ every day?
  A. collect B. collecting C. collected D. be collected
@@ -124,7 +118,7 @@ https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
  A. bite B. bit C. bited D. bitten
 61. Of the two subjects I am learning in English at school, physics is the ______. 
  A. difficult B. more difficult C. most difficult D. more difficult than
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
+
 V.Choose one sentences that has the same meaning as the root one.
 62. "Where are you from?" Nga said to Peter.
  A. Nga asked Peter where was he from.
@@ -165,7 +159,7 @@ D. Maryam is going to walk to the mosque on Sundays
  C. haven’t seen her that was in 2005.D. saw her since 2005.
 70. This sweater must be washed in warm water.
  A. You mustn’t wash this sweater in warm water.
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
+
  B. Do wash this sweater in warm water, please.
  C. Warm water has to be washed in this sweater.
  D. We have to wash this sweater in warm water.
@@ -208,7 +202,6 @@ renewable natural resources are important things in the environment that do not 
 naturally. For example coal and natural gas.
 76. What does the word “ environmentalists” in line 3 mean ?
  A. living things. B. people who protect the environment.
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
  C. people who destroy the environment. D. people who pollute the environment.
 77. One example of renewable natural resources is…………………….
  A. sunlight B. coal C. oil D. natural gas
@@ -251,7 +244,6 @@ climbing. The other five continue.
 Only Ms. Tabei was able to climb the last 70 meters. She was standing (90) 
 _________ top of the world.
 86. A. at B. in C. with D. between
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
 87. A. to climb B.climb C. climbing D. climbed
 88. A. difference B. differ C. different D. differently
 89. A. choose B. chose C. chosen D. choosing
@@ -279,34 +271,8 @@ puppets which dance in the streets.
 98. A. falls B. appears C. happens D. occurs
 99. A. the same B. as C. not less D. equally
 100. A. instead of B. on behalf of C. in spite of D. place of
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
-ANSWER KEY
-I. Choose the word that has underlined part pronounced differently from the others.
-1. D 2. A 3. A 4. C 5. B 6. A 7. A
-II. Choose the words or phrases that are not correct in standard English.
-8. C 9. C 10. A 11. A 12. D 13. D 14. A
-15. C 16. C 17. D
-III.Choose the word whose main stress is placed differently from the others.
-18. B 19. D 20. C 21. D
-IV. Choose the word or phrase that best completes each unfinished sentence below or 
-substitutes for the underlined word or phrase. 
-22. D 23. C 24. C 25. D 26. B 27. C 28.C
-29. A 30. A 31. C 32. B 33. A 34. A 35. A
-36. A 37. D 38. A 40. B 41. B 42. C 43. C
-44. B 45. D 46. A 47. B 48. A 49. C 50. B
-51. A 52. B 53. C 54. B 55. B 56. A 57. C
-58. D 59. B 60. D 61. B
-V.Choose one sentences that has the same meaning as the root one.
-62. C 63. B 64. C 65. C 66. C 67. B
-68. D 69. B 70. D 72. C 73. B 74. D 75. C
-VI. Read the following passage and choose the item (a, b, c, or d) that best answers 
-each of the questions about it. 
-76. B 77. A 78. D 79. C
-80. C 81. C 82. D 83. D 84. A
-85.D 86. A 87. D 88. C 89. B 90. B
-91. A 92. B 93. C 94. D 95. B 96. D 97. C
-98. A 99. D 110. A
-https://giasudaykem.com.vn/gia-su-day-kem-tai-nha-.html
+
+
 
 
 1
@@ -551,25 +517,7 @@ a. watched b. watching c. watch
 150. The film . . . . . on TV won the 1
 st prize in the film festival last year. a. showing b. show c. shown
 12
-ĐÁP ÁN
-1. a 2. b 3. c 4. b 5. c 6. a 7. b 8. c 9. a 10. b
-11. c 12. c 13. b 14. c 15. c 16. b 17. b 18. a 19. a 20. c
-21. c 22. a 23. c 24. b 25. b 26. b 27. b 28. a 29. a 30. a
-31. a 32. b 33. c 34. c 35. b 36 b37. c 38. b 39. c 40. c
-41. c 42. b 43. b 44. b 45. b 46. c 47. a 48. c 49. c 50. a
-51. b 52. a 53. a 54. b 55. b 56. b 57. c 58. b 59. a 60. a
-61. b 62. c 63. a 64. b 65. a 66. a 67. a 68. b 69. b 70. a
-71. a 72. b 73. b 74. c 75. b 76. c 77. b 78. a 79. a 80. c
-81. c 82. b 83. a 84. a 85. b 86. c 87. c 88. b 89. c 90. a. 91. a 92. b 93. c 94. b 95. b 96. b 97. b 98. a 99. c 100. b
-101. b 102. a 103. a 104. b 105. a 106. b 107. a 108. b 109. a 110. c
-111. a 112. b 113. b 114. a 115. c 116. c 117. c 118. a 119. a 120. b
-121. c 122. a 123. a 124. b 125. c 126. a 127. b 128. b 129. c 130. c
-131. b 132. c 133. a 134. c 135. b 136. c 137. c 138. c 139. b 140. c
-141. a 142. a 143. b 144. c 145. a 146. c 147. a 148. c 149. a 150. c
 
-
-Gia sư Tài Năng Việt
- https://giasudaykem.com.vn/tai-lieu-mon-tieng-anh-lop-8.html
  
  Những động từ bất qui tắc thường gặp ở lớp 8
 Infinitive
@@ -888,8 +836,6 @@ ngồi
 ngủ
 ngửi thấy
 nói
-Gia sư Tài Năng Việt
- https://giasudaykem.com.vn/tai-lieu-mon-tieng-anh-lop-8.html
 spell
 spend
 spread
@@ -957,7 +903,7 @@ mặc, đội, mang
 sẽ
 thắng
 viết
-Chúc các bạn học tốt!
+
 
  
  Tiết : 1 Date : 
