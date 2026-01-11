@@ -1,8 +1,6 @@
 """
 SmartKid Arena - Game-based Learning Platform
-Hệ thống học tập thích ứng với AI
-
-ROOT LEVEL VERSION - app_smartkid.py ở ngoài folder services
+BEAUTIFUL EDITION - Designed for Gen Alpha 🌈
 """
 
 import streamlit as st
@@ -12,7 +10,7 @@ from datetime import datetime
 import uuid
 import os
 
-# ===== IMPORT CÁC MODULE Ở ROOT LEVEL =====
+# ===== IMPORTS =====
 from quiz_engine import QuizEngine
 from game_mechanics import GameMechanics
 from player_profile import PlayerProfile
@@ -20,60 +18,233 @@ from services.blocks.history_tracker import LearningHistoryTracker
 from services.blocks.weakness_analyzer import WeaknessAnalyzer
 from services.blocks.adaptive_quiz_engine import AdaptiveQuizEngine
 from services.blocks.file_processor import doc_file
-from services.report_generator import ReportGenerator
 from pages.student_dashboard import render_weakness_dashboard
 
 # ===== CẤU HÌNH TRANG =====
 st.set_page_config(
     page_title="SmartKid Arena 🎮",
-    page_icon="🎓",
+    page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ===== CUSTOM CSS (Game-like UI) =====
+# ===== SUPER BEAUTIFUL CSS 🎨 =====
 st.markdown("""
 <style>
-    /* Background gradient */
+    /* === BACKGROUND ANIMATED === */
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;600;700&display=swap');
+    
     .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
     }
     
-    /* Card styling */
-    .metric-card {
-        background: rgba(255,255,255,0.9);
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* === GLASSMORPHISM CARDS === */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 25px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        transition: all 0.3s ease;
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    .glass-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    /* === NEON TEXT === */
+    .neon-title {
+        font-family: 'Fredoka One', cursive;
+        font-size: 3.5rem;
         text-align: center;
-        margin: 10px;
+        color: #fff;
+        text-shadow: 
+            0 0 10px #fff,
+            0 0 20px #fff,
+            0 0 30px #fff,
+            0 0 40px #ff00de,
+            0 0 70px #ff00de,
+            0 0 80px #ff00de,
+            0 0 100px #ff00de,
+            0 0 150px #ff00de;
+        animation: flicker 1.5s infinite alternate;
     }
     
-    /* Button styling */
+    @keyframes flicker {
+        0%, 18%, 22%, 25%, 53%, 57%, 100% {
+            text-shadow: 
+                0 0 10px #fff,
+                0 0 20px #fff,
+                0 0 30px #fff,
+                0 0 40px #ff00de,
+                0 0 70px #ff00de;
+        }
+        20%, 24%, 55% {        
+            text-shadow: none;
+        }
+    }
+    
+    /* === MODERN BUTTONS === */
     .stButton>button {
-        background: linear-gradient(45deg, #FF6B6B, #FFD93D);
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        font-weight: bold;
         border: none;
-        border-radius: 10px;
-        padding: 15px 30px;
-        font-size: 18px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        transition: transform 0.2s;
+        border-radius: 50px;
+        padding: 18px 40px;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stButton>button:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.5s;
     }
     
     .stButton>button:hover {
         transform: scale(1.05);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
     }
     
-    /* Progress bar */
+    .stButton>button:hover:before {
+        left: 100%;
+    }
+    
+    /* === METRIC CARDS === */
+    .metric-card {
+        background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+        border-radius: 20px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        border: 3px solid rgba(255,255,255,0.5);
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px) rotate(2deg);
+    }
+    
+    /* === PROGRESS BAR RAINBOW === */
     .stProgress > div > div {
-        background: linear-gradient(90deg, #4ECDC4, #44A08D);
+        background: linear-gradient(90deg, 
+            #ff0000, #ff7f00, #ffff00, #00ff00, 
+            #0000ff, #4b0082, #9400d3);
+        background-size: 200% 200%;
+        animation: rainbow 2s linear infinite;
     }
     
-    /* Sidebar styling */
+    @keyframes rainbow {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 100% 50%; }
+    }
+    
+    /* === SIDEBAR GRADIENT === */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+        background: linear-gradient(180deg, 
+            rgba(102, 126, 234, 0.9) 0%, 
+            rgba(118, 75, 162, 0.9) 100%);
+        backdrop-filter: blur(10px);
+    }
+    
+    [data-testid="stSidebar"] .metric-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        color: white;
+    }
+    
+    /* === EMOJI ANIMATION === */
+    .emoji-bounce {
+        display: inline-block;
+        animation: bounce 1s ease infinite;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+    
+    /* === MODE CARDS === */
+    .mode-card {
+        background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+        backdrop-filter: blur(10px);
+        border-radius: 25px;
+        padding: 30px;
+        border: 3px solid rgba(255,255,255,0.4);
+        text-align: center;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        cursor: pointer;
+    }
+    
+    .mode-card:hover {
+        transform: scale(1.05) rotate(-2deg);
+        border-color: #fff;
+        background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.2) 100%);
+    }
+    
+    /* === PARTICLE BACKGROUND (Optional) === */
+    .particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+    }
+    
+    /* === CUSTOM FONTS === */
+    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        font-family: 'Fredoka One', cursive !important;
+        color: white !important;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    p, div, span, .stMarkdown p {
+        font-family: 'Poppins', sans-serif !important;
+    }
+    
+    /* === BADGES GLOW === */
+    .badge-glow {
+        filter: drop-shadow(0 0 10px #ffd700);
+        animation: glow 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes glow {
+        0%, 100% { filter: drop-shadow(0 0 10px #ffd700); }
+        50% { filter: drop-shadow(0 0 20px #ffd700); }
+    }
+    
+    /* === CONFETTI EFFECT (when correct answer) === */
+    @keyframes confetti-fall {
+        0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -81,34 +252,49 @@ st.markdown("""
 # ===== KHỞI TẠO SESSION STATE =====
 def init_session_state():
     if "player" not in st.session_state:
-        # Kiểm tra xem đã có tên trong session chưa
         if "player_name" not in st.session_state:
-            # Hiển thị form nhập tên ngay đầu app
-            st.title("Chào mừng đến SmartKid Arena! 🎮")
-            player_name = st.text_input("Nhập tên của bạn:", placeholder="Ví dụ: Minh, Lan, Bé Bảo...")
-            start_button = st.button("Bắt đầu chơi →", type="primary")
+            # === BEAUTIFUL WELCOME SCREEN ===
+            st.markdown("""
+            <div style='text-align: center; padding: 50px;'>
+                <h1 class='neon-title'>🌟 SMARTKID ARENA 🌟</h1>
+                <p style='font-size: 1.5rem; color: white; font-weight: 600; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);'>
+                    Học mà như chơi game! 🎮✨
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
             
-            if start_button and player_name.strip():
-                st.session_state.player_name = player_name.strip()
-                st.rerun()  # Reload để tạo player
-            elif start_button:
-                st.error("Vui lòng nhập tên nhé!")
-            # Dừng lại để người dùng nhập tên
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+                st.markdown("### 👋 Chào mừng chiến binh nhỏ!")
+                player_name = st.text_input(
+                    "Nhập tên của bạn:", 
+                    placeholder="Ví dụ: Minh, Lan, Bé Bảo...",
+                    label_visibility="collapsed"
+                )
+                
+                if st.button("🚀 BẮT ĐẦU PHIÊU LƯU!", type="primary", use_container_width=True):
+                    if player_name.strip():
+                        st.session_state.player_name = player_name.strip()
+                        st.balloons()
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("❌ Vui lòng nhập tên nhé!")
+                st.markdown("</div>", unsafe_allow_html=True)
             st.stop()
         
-        # Khi đã có tên → tạo hoặc load profile từ Supabase
         player_name = st.session_state.player_name
         st.session_state.player = PlayerProfile(player_name)
     
-    # Quiz engine (cũ)
+    # Quiz engine
     if "quiz_engine" not in st.session_state:
         st.session_state.quiz_engine = QuizEngine()
     
-    # Game mechanics
     if "game" not in st.session_state:
         st.session_state.game = GameMechanics()
     
-    # ===== THÊM MỚI: History & Analytics =====
+    # History & Analytics
     if "history_tracker" not in st.session_state:
         st.session_state.history_tracker = LearningHistoryTracker(
             student_id=st.session_state.player.name
@@ -126,159 +312,181 @@ def init_session_state():
         )
     
     # Quiz state
-    if "current_quiz" not in st.session_state:
-        st.session_state.current_quiz = None
-    
-    if "quiz_active" not in st.session_state:
-        st.session_state.quiz_active = False
-    
-    if "current_question" not in st.session_state:
-        st.session_state.current_question = 0
-    
-    if "score" not in st.session_state:
-        st.session_state.score = 0
-    
-    if "answers" not in st.session_state:
-        st.session_state.answers = []
-    
-    # Book content
-    if "book_content" not in st.session_state:
-        st.session_state.book_content = None
-    
-    if "book_name" not in st.session_state:
-        st.session_state.book_name = ""
-    
-    # Session tracking
-    if "current_session_id" not in st.session_state:
-        st.session_state.current_session_id = None
-    
-    if "question_start_time" not in st.session_state:
-        st.session_state.question_start_time = None
-    
-    # UI state
-    if "show_dashboard" not in st.session_state:
-        st.session_state.show_dashboard = False
-    
-    if "mode" not in st.session_state:
-        st.session_state.mode = None
-    
-    if "focus_mode" not in st.session_state:
-        st.session_state.focus_mode = "adaptive"
+    for key, default in [
+        ("current_quiz", None),
+        ("quiz_active", False),
+        ("current_question", 0),
+        ("score", 0),
+        ("answers", []),
+        ("book_content", None),
+        ("book_name", ""),
+        ("current_session_id", None),
+        ("question_start_time", None),
+        ("show_dashboard", False),
+        ("mode", None),
+        ("focus_mode", "adaptive")
+    ]:
+        if key not in st.session_state:
+            st.session_state[key] = default
 
-# Gọi init
 init_session_state()
 
-# ===== HEADER =====
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.markdown("<h1 style='text-align: center; color: white;'>🎮 SMARTKID ARENA 🎓</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: white;'>Học mà như chơi game!</p>", unsafe_allow_html=True)
+# ===== BEAUTIFUL HEADER =====
+st.markdown("""
+<div style='text-align: center; padding: 20px;'>
+    <h1 class='neon-title'>
+        <span class='emoji-bounce'>🎮</span> 
+        SMARTKID ARENA 
+        <span class='emoji-bounce'>🎯</span>
+    </h1>
+    <p style='font-size: 1.2rem; color: white; font-weight: 600; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);'>
+        Học mà như chơi game! ✨🚀
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
-# ===== SIDEBAR: PLAYER STATS =====
+# ===== BEAUTIFUL SIDEBAR =====
 with st.sidebar:
-    st.markdown("### 👤 Hồ Sơ Chiến Binh")
-    
     player = st.session_state.player
     
-    # Avatar & Name
-    st.markdown(f"<div class='metric-card'><h2>🦸 {player.name}</h2></div>", unsafe_allow_html=True)
+    # Avatar (can add custom avatars later)
+    st.markdown(f"""
+    <div class='metric-card' style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;'>
+        <div style='font-size: 4rem; margin-bottom: 10px;'>🦸</div>
+        <h2 style='color: white; margin: 0;'>{player.name}</h2>
+        <p style='color: rgba(255,255,255,0.8); margin: 5px 0;'>Level {player.level} Warrior</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Level & XP
-    st.metric("⚡ Level", player.level)
-    st.metric("🌟 XP", f"{player.xp}/{player.xp_to_next_level()}")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Stats with icons
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"""
+        <div class='metric-card'>
+            <div style='font-size: 2.5rem;'>⚡</div>
+            <p style='font-size: 0.9rem; color: #666; margin: 5px 0;'>XP</p>
+            <h3 style='color: #667eea; margin: 0;'>{player.xp}/{player.xp_to_next_level()}</h3>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class='metric-card'>
+            <div style='font-size: 2.5rem;'>🔥</div>
+            <p style='font-size: 0.9rem; color: #666; margin: 5px 0;'>Streak</p>
+            <h3 style='color: #ff6b6b; margin: 0;'>{player.streak} ngày</h3>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.progress(player.xp / player.xp_to_next_level())
     
-    # Streak
-    st.metric("🔥 Streak", f"{player.streak} ngày")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    # Total Score
-    st.metric("💎 Tổng điểm", player.total_score)
+    st.markdown(f"""
+    <div class='metric-card'>
+        <div style='font-size: 2.5rem;'>💎</div>
+        <p style='font-size: 0.9rem; color: #666; margin: 5px 0;'>Total Score</p>
+        <h3 style='color: #4ecdc4; margin: 0;'>{player.total_score:,}</h3>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # Badges
+    # Badges with glow effect
     st.markdown("### 🏆 Huy Hiệu")
     badges = player.get_badges()
     if badges:
-        badge_cols = st.columns(3)
-        for i, badge in enumerate(badges[:6]):
-            with badge_cols[i % 3]:
-                st.markdown(f"<div style='font-size: 30px; text-align: center;'>{badge}</div>", unsafe_allow_html=True)
+        badge_html = "<div style='display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;'>"
+        for badge in badges[:6]:
+            badge_html += f"<div class='badge-glow' style='font-size: 3rem;'>{badge}</div>"
+        badge_html += "</div>"
+        st.markdown(badge_html, unsafe_allow_html=True)
     else:
         st.info("Chưa có huy hiệu. Làm bài để nhận thưởng!")
     
     st.markdown("---")
     
-    # ===== THÊM MỚI: Nút Xem Dashboard =====
-    if st.button("📊 XEM PHÂN TÍCH HỌC TẬP", use_container_width=True, type="primary"):
+    # Dashboard button with gradient
+    if st.button("📊 XEM PHÂN TÍCH", use_container_width=True, type="primary"):
         st.session_state.show_dashboard = True
         st.rerun()
     
-    # Stats nhanh
+    # Quick stats
     overall_stats = st.session_state.history_tracker.get_overall_stats()
     if overall_stats['total_questions'] > 0:
-        st.markdown("### 📈 Thống Kê Nhanh")
-        st.metric("📝 Tổng câu đã làm", overall_stats['total_questions'])
-        st.metric("🎯 Độ chính xác", f"{overall_stats['accuracy']:.1%}")
+        st.markdown(f"""
+        <div class='glass-card' style='margin-top: 20px; color: white;'>
+            <p style='font-size: 0.9rem; margin: 5px 0;'>📝 Tổng câu: <b>{overall_stats['total_questions']}</b></p>
+            <p style='font-size: 0.9rem; margin: 5px 0;'>🎯 Độ chính xác: <b>{overall_stats['accuracy']:.1%}</b></p>
+        </div>
+        """, unsafe_allow_html=True)
 
+# ===== MAIN CONTENT =====
 
 if st.session_state.show_dashboard:
     render_weakness_dashboard(st.session_state.weakness_analyzer)
 
-# ===== NẾU ĐANG LÀM QUIZ =====
 elif st.session_state.quiz_active:
+    # === QUIZ UI ===
     quiz = st.session_state.current_quiz
     q_index = st.session_state.current_question
     
     if q_index < len(quiz):
         question_data = quiz[q_index]
         
-        # Progress bar
+        # Beautiful progress
         progress = (q_index + 1) / len(quiz)
         st.progress(progress)
-        st.markdown(f"### Câu {q_index + 1}/{len(quiz)}")
         
-        # Question
-        st.markdown(f"## {question_data['question']}")
+        st.markdown(f"""
+        <div class='glass-card' style='text-align: center; margin: 20px 0;'>
+            <h2 style='color: white; margin: 0;'>Câu {q_index + 1} / {len(quiz)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Start timer nếu chưa có
+        # Question card
+        st.markdown(f"""
+        <div class='glass-card' style='margin: 30px 0;'>
+            <h2 style='color: white; font-size: 1.8rem;'>{question_data['question']}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Timer
         if st.session_state.question_start_time is None:
             st.session_state.question_start_time = time.time()
         
-        # Options
+        # Options with custom styling
         selected = st.radio(
             "Chọn đáp án:",
             question_data['options'],
-            key=f"q_{q_index}"
+            key=f"q_{q_index}",
+            label_visibility="collapsed"
         )
         
-        # Confidence level
+        # Confidence slider
         confidence = st.select_slider(
-            "Bạn tự tin bao nhiêu với đáp án này?",
-            options=["Không chắc 😕", "Tạm được 😐", "Khá chắc 😊", "Rất chắc 😎"],
-            value="Tạm được 😐",
+            "Độ tự tin:",
+            options=["😕 Không chắc", "😐 Tạm được", "😊 Khá chắc", "😎 Rất chắc"],
+            value="😐 Tạm được",
             key=f"conf_{q_index}"
         )
         
-        col1, col2, col3 = st.columns([1, 1, 1])
-        
+        col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("✅ XÁC NHẬN", type="primary", use_container_width=True):
-                # Calculate time spent
                 time_spent = time.time() - st.session_state.question_start_time
-                
-                # Check answer
                 correct = selected == question_data['correct_answer']
                 
-                # Map confidence
                 confidence_map = {
-                    "Không chắc 😕": "low",
-                    "Tạm được 😐": "medium",
-                    "Khá chắc 😊": "high",
-                    "Rất chắc 😎": "high"
+                    "😕 Không chắc": "low",
+                    "😐 Tạm được": "medium",
+                    "😊 Khá chắc": "high",
+                    "😎 Rất chắc": "high"
                 }
                 
-                # ===== LOG VÀO HISTORY TRACKER =====
+                # Log answer
                 st.session_state.history_tracker.log_answer(
                     session_id=st.session_state.current_session_id,
                     question_data={
@@ -287,7 +495,7 @@ elif st.session_state.quiz_active:
                         'subject': st.session_state.get('current_subject', 'Unknown'),
                         'chapter': st.session_state.get('current_chapter', 'Unknown'),
                         'topic': question_data.get('topic', 'General'),
-                        'difficulty': st.session_state.get('current_difficulty', 'Medium 🤔'),
+                        'difficulty': st.session_state.get('current_difficulty', 'Medium'),
                         'concept_tags': question_data.get('concept_tags', [])
                     },
                     answer_data={
@@ -299,7 +507,6 @@ elif st.session_state.quiz_active:
                     }
                 )
                 
-                # Save to answers list
                 st.session_state.answers.append({
                     'question': question_data['question'],
                     'selected': selected,
@@ -308,56 +515,77 @@ elif st.session_state.quiz_active:
                     'time_spent': time_spent
                 })
                 
-                # Show feedback
+                # Feedback
                 if correct:
-                    st.success("🎉 CHÍNH XÁC!")
+                    st.success("🎉 CHÍNH XÁC! TUYỆT VỜI!")
                     st.balloons()
                     st.session_state.score += 10
                 else:
-                    st.error(f"❌ SAI RỒI! Đáp án đúng: {question_data['correct_answer']}")
+                    st.error(f"❌ Chưa đúng! Đáp án: {question_data['correct_answer']}")
                     if 'explanation' in question_data:
                         with st.expander("💡 Xem giải thích"):
                             st.info(question_data['explanation'])
                 
-                # Reset timer
                 st.session_state.question_start_time = None
-                
                 time.sleep(2)
                 st.session_state.current_question += 1
                 st.rerun()
     
     else:
-        # ===== QUIZ FINISHED =====
-        st.markdown("## 🎊 HOÀN THÀNH!")
+        # === QUIZ FINISHED ===
+        st.markdown("<h1 style='text-align: center;'>🎊 HOÀN THÀNH! 🎊</h1>", unsafe_allow_html=True)
         
         total = len(st.session_state.answers)
         correct = sum(1 for a in st.session_state.answers if a['is_correct'])
         accuracy = (correct / total) * 100 if total > 0 else 0
         
-        # End session
         st.session_state.history_tracker.end_session(
             session_id=st.session_state.current_session_id,
             score=st.session_state.score
         )
         
-        # Results
-        result_col1, result_col2, result_col3, result_col4 = st.columns(4)
+        # Beautiful results
+        col1, col2, col3, col4 = st.columns(4)
         
-        with result_col1:
-            st.metric("📊 Số câu đúng", f"{correct}/{total}")
+        with col1:
+            st.markdown(f"""
+            <div class='glass-card' style='text-align: center;'>
+                <div style='font-size: 3rem;'>📊</div>
+                <h3 style='color: white;'>{correct}/{total}</h3>
+                <p style='color: rgba(255,255,255,0.8);'>Câu đúng</p>
+            </div>
+            """, unsafe_allow_html=True)
         
-        with result_col2:
-            st.metric("🎯 Độ chính xác", f"{accuracy:.1f}%")
+        with col2:
+            st.markdown(f"""
+            <div class='glass-card' style='text-align: center;'>
+                <div style='font-size: 3rem;'>🎯</div>
+                <h3 style='color: white;'>{accuracy:.1f}%</h3>
+                <p style='color: rgba(255,255,255,0.8);'>Chính xác</p>
+            </div>
+            """, unsafe_allow_html=True)
         
-        with result_col3:
+        with col3:
             xp_earned = correct * 10
-            st.metric("⚡ XP kiếm được", xp_earned)
+            st.markdown(f"""
+            <div class='glass-card' style='text-align: center;'>
+                <div style='font-size: 3rem;'>⚡</div>
+                <h3 style='color: white;'>+{xp_earned}</h3>
+                <p style='color: rgba(255,255,255,0.8);'>XP</p>
+            </div>
+            """, unsafe_allow_html=True)
         
-        with result_col4:
+        with col4:
             avg_time = sum(a['time_spent'] for a in st.session_state.answers) / total
-            st.metric("⏱️ Thời gian TB", f"{avg_time:.1f}s")
+            st.markdown(f"""
+            <div class='glass-card' style='text-align: center;'>
+                <div style='font-size: 3rem;'>⏱️</div>
+                <h3 style='color: white;'>{avg_time:.1f}s</h3>
+                <p style='color: rgba(255,255,255,0.8);'>Trung bình</p>
+            </div>
+            """, unsafe_allow_html=True)
         
-        # Update player profile
+        # Update player
         st.session_state.player.add_xp(xp_earned)
         st.session_state.player.update_streak()
         st.session_state.player.total_score += st.session_state.score
@@ -365,57 +593,17 @@ elif st.session_state.quiz_active:
         # Performance message
         if accuracy >= 90:
             st.success("🌟 XUẤT SẮC! Bạn thật tuyệt vời!")
+            st.balloons()
         elif accuracy >= 70:
             st.info("👍 TỐT LẮM! Tiếp tục phát huy nhé!")
         else:
             st.warning("💪 CỐ GẮNG LÊN! Hãy xem lại phần yếu nhé!")
         
-        # Show answers
-        with st.expander("📝 Xem lại đáp án chi tiết"):
-            for i, ans in enumerate(st.session_state.answers):
-                icon = "✅" if ans['is_correct'] else "❌"
-                st.markdown(f"{icon} **Câu {i+1}:** {ans['question']}")
-                st.markdown(f"   - Bạn chọn: {ans['selected']}")
-                if not ans['is_correct']:
-                    st.markdown(f"   - Đáp án đúng: {ans['correct']}")
-                st.markdown(f"   - Thời gian: {ans['time_spent']:.1f}s")
-                st.markdown("---")
-
-        
-        
-        # ===== THÊM MỚI: Phân tích nhanh =====
-        st.markdown("### 🔍 Phân Tích Nhanh")
-        
-        priority_topics = st.session_state.weakness_analyzer.get_priority_topics(top_n=3)
-        
-        if priority_topics:
-            st.warning(f"💡 **Gợi ý:** Bạn nên tập trung vào: **{', '.join(priority_topics)}**")
-
-        # ── THÊM ĐÂY: NÚT XUẤT BÁO CÁO PDF ────────────────────────────
-        st.markdown("---")
-        if st.button("📄 Xuất báo cáo PDF", type="primary", use_container_width=True):
-            with st.spinner("Đang tạo báo cáo..."):
-                from services.report_generator import ReportGenerator  # import ở đây hoặc đầu file
-                    
-                pdf_file = ReportGenerator.generate_quiz_report(
-                    player=st.session_state.player,
-                    quiz_results=st.session_state.answers,  # list các câu trả lời
-                    weakness_topics=st.session_state.weakness_analyzer.get_priority_topics(5)
-                )
-                    
-                with open(pdf_file, "rb") as f:
-                    st.download_button(
-                        label="Tải báo cáo PDF về máy",
-                        data=f,
-                        file_name=pdf_file,
-                        mime="application/pdf"
-                    )
-        
         # Buttons
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("📊 XEM PHÂN TÍCH ĐẦY ĐỦ", use_container_width=True, type="primary"):
+            if st.button("📊 XEM PHÂN TÍCH", use_container_width=True, type="primary"):
                 st.session_state.quiz_active = False
                 st.session_state.show_dashboard = True
                 st.rerun()
@@ -427,247 +615,456 @@ elif st.session_state.quiz_active:
                 st.rerun()
         
         with col3:
-            if st.button("🏠 VỀ TRANG CHỦ", use_container_width=True):
+            if st.button("🏠 TRANG CHỦ", use_container_width=True):
                 st.session_state.quiz_active = False
                 st.session_state.current_quiz = None
                 st.session_state.mode = None
                 st.rerun()
 
-# ===== TRANG CHỦ =====
 else:
     if not st.session_state.mode:
-        st.markdown("## 🎯 Chọn Nhiệm Vụ")
+        # === BEAUTIFUL MODE SELECT ===
+        st.markdown("<h2 style='text-align: center; color: white;'>🎯 Chọn Nhiệm Vụ</h2>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        mode_col1, mode_col2 = st.columns(2)
+        col1, col2 = st.columns(2)
         
-        with mode_col1:
+        with col1:
             st.markdown("""
-            <div class='metric-card'>
-                <h3>📚 Chế Độ Học Tập</h3>
-                <p>Upload sách và làm quiz theo chương</p>
+            <div class='mode-card'>
+                <div style='font-size: 5rem; margin-bottom: 20px;'>📚</div>
+                <h2 style='color: white; margin: 10px 0;'>Chế Độ Học Tập</h2>
+                <p style='color: rgba(255,255,255,0.9); font-size: 1.1rem;'>Upload sách và làm quiz theo chương</p>
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("🚀 BẮT ĐẦU HỌC", key="study_mode", use_container_width=True):
+            if st.button("🚀 BẮT ĐẦU HỌC", key="study", use_container_width=True):
                 st.session_state.mode = "study"
                 st.rerun()
         
-        with mode_col2:
+        with col2:
             st.markdown("""
-            <div class='metric-card'>
-                <h3>⚔️ Chế Độ Thử Thách</h3>
-                <p>Đấu Boss và leo bảng xếp hạng</p>
+            <div class='mode-card'>
+                <div style='font-size: 5rem; margin-bottom: 20px;'>⚔️</div>
+                <h2 style='color: white; margin: 10px 0;'>Chế Độ Thử Thách</h2>
+                <p style='color: rgba(255,255,255,0.9); font-size: 1.1rem;'>Đấu Boss và leo bảng xếp hạng</p>
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button("🔥 THÁCH ĐẤU", key="challenge_mode", use_container_width=True):
+            if st.button("🔥 THÁCH ĐẤU", key="challenge", use_container_width=True):
                 st.session_state.mode = "challenge"
                 st.rerun()
     
-    # ===== STUDY MODE =====
+    # === STUDY MODE ===
     elif st.session_state.mode == "study":
-        st.markdown("## 📖 Chọn Sách Giáo Khoa")
+        st.markdown("<h2 style='text-align: center; color: white;'>📖 Chọn Sách Giáo Khoa</h2>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        # Chọn môn
-        subject = st.selectbox(
-            "Chọn môn học:",
-            ["📐 Toán", "📝 Văn", "🇬🇧 Tiếng Anh", "🔬 Khoa Học Tự Nhiên", "🏛️ Sử Địa", "🌍  Công Nghệ"]
-        )
+        # === SUBJECT SELECTOR WITH ICONS ===
+        st.markdown("""
+        <div class='glass-card' style='margin: 20px auto; max-width: 800px;'>
+            <h3 style='color: white; text-align: center; margin-bottom: 20px;'>Chọn môn học của bạn</h3>
+        """, unsafe_allow_html=True)
         
-        st.session_state.current_subject = subject
-        
-        # Map môn → folder
-        subject_to_folder = {
-            "📐 Toán": "toan",
-            "📝 Văn": "van",
-            "🇬🇧 Tiếng Anh": "tieng_anh",
-            "🔬 Khoa Học Tự Nhiên": "khoa_hoc_tu_nhien",
-            "🏛️ Sử Địa": "su_dia",
-            "🌍 Công Nghệ": "cong_nghe"
+        subject_options = {
+            "📐 Toán": {"icon": "🔢", "color": "#667eea", "folder": "toan"},
+            "📝 Văn": {"icon": "✍️", "color": "#ff6b6b", "folder": "van"},
+            "🇬🇧 Tiếng Anh": {"icon": "🗣️", "color": "#4ecdc4", "folder": "tieng_anh"},
+            "🔬 Khoa Học": {"icon": "🧪", "color": "#95e1d3", "folder": "khoa_hoc_tu_nhien"},
+            "🏛️ Sử Địa": {"icon": "🗺️", "color": "#f38181", "folder": "su_dia"},
+            "🌐 Công Nghệ": {"icon": "💻", "color": "#aa96da", "folder": "cong_nghe"}
         }
         
-        folder = subject_to_folder.get(subject, "")
-        books_path = os.path.join("books", folder)
+        # Create subject buttons
+        cols = st.columns(3)
+        selected_subject = None
         
-        # Lấy danh sách sách
-        available_books = []
-        if os.path.exists(books_path):
-            available_books = [f for f in os.listdir(books_path) if f.lower().endswith(('.pdf', '.docx'))]
-            available_books.sort()
+        for idx, (subject, info) in enumerate(subject_options.items()):
+            with cols[idx % 3]:
+                if st.button(
+                    f"{info['icon']} {subject.split(' ', 1)[1]}", 
+                    key=f"subj_{idx}",
+                    use_container_width=True
+                ):
+                    selected_subject = subject
+                    st.session_state.current_subject = subject
         
-        # UI chọn sách
-        if available_books:
-            st.success(f"📚 Tìm thấy **{len(available_books)} sách sẵn** cho môn {subject}")
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Get current subject
+        if not selected_subject and "current_subject" in st.session_state:
+            selected_subject = st.session_state.current_subject
+        
+        if selected_subject:
+            folder = subject_options[selected_subject]["folder"]
+            books_path = os.path.join("books", folder)
             
-            choice = st.radio(
-                "Chọn nguồn sách:",
-                ["📖 Dùng sách sẵn trong repo", "⬆️ Upload sách mới"],
-                horizontal=True
-            )
+            # Get available books
+            available_books = []
+            if os.path.exists(books_path):
+                available_books = [f for f in os.listdir(books_path) 
+                                 if f.lower().endswith(('.pdf', '.docx'))]
+                available_books.sort()
             
-            if choice == "📖 Dùng sách sẵn trong repo":
-                selected_book_name = st.selectbox("Chọn sách:", available_books)
+            # === BOOK SELECTION UI ===
+            if available_books:
+                st.markdown(f"""
+                <div class='glass-card' style='margin: 30px auto; max-width: 900px;'>
+                    <div style='text-align: center; margin-bottom: 20px;'>
+                        <div style='font-size: 3rem;'>📚</div>
+                        <h3 style='color: white;'>Tìm thấy {len(available_books)} sách sẵn!</h3>
+                    </div>
+                """, unsafe_allow_html=True)
                 
-                if st.button("📂 MỞ SÁCH NÀY", type="secondary", use_container_width=True):
-                    book_path = os.path.join(books_path, selected_book_name)
+                # Radio choice with beautiful styling
+                choice = st.radio(
+                    "Chọn nguồn sách:",
+                    ["📖 Dùng sách có sẵn", "⬆️ Upload sách mới"],
+                    horizontal=True
+                )
+                
+                if choice == "📖 Dùng sách có sẵn":
+                    # Book grid display
+                    st.markdown("<div style='margin: 20px 0;'>", unsafe_allow_html=True)
                     
-                    with st.spinner(f"📖 Đang đọc {selected_book_name}..."):
-                        try:
-                            content = doc_file(book_path)
+                    # Display books in grid
+                    book_cols = st.columns(2)
+                    for idx, book in enumerate(available_books):
+                        with book_cols[idx % 2]:
+                            if st.button(
+                                f"📕 {book}", 
+                                key=f"book_{idx}",
+                                use_container_width=True
+                            ):
+                                book_path = os.path.join(books_path, book)
+                                
+                                with st.spinner(f"📖 Đang đọc {book}..."):
+                                    try:
+                                        content = doc_file(book_path)
+                                        
+                                        if content and len(content) > 100:
+                                            st.session_state.book_content = content
+                                            st.session_state.book_name = book
+                                            st.success(f"✅ Đã đọc xong **{book}**!")
+                                            st.balloons()
+                                            time.sleep(1)
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ File rỗng!")
+                                    except Exception as e:
+                                        st.error(f"❌ Lỗi: {e}")
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
+                
+                else:
+                    # Upload UI
+                    uploaded_file = st.file_uploader(
+                        "Chọn file sách (PDF/DOCX):",
+                        type=["pdf", "docx"],
+                        key="upload_file"
+                    )
+                    
+                    if uploaded_file:
+                        with st.spinner("📖 Đang xử lý..."):
+                            content = doc_file(uploaded_file)
                             
                             if content and len(content) > 100:
                                 st.session_state.book_content = content
-                                st.session_state.book_name = selected_book_name
-                                st.success(f"✅ Đã đọc xong **{selected_book_name}** ({len(content):,} ký tự)")
-                                st.rerun()
-                            else:
-                                st.error("❌ File rỗng hoặc không đọc được!")
-                        except Exception as e:
-                            st.error(f"❌ Lỗi đọc file: {e}")
+                                st.session_state.book_name = uploaded_file.name
+                                st.success(f"✅ Upload thành công!")
+                                st.balloons()
+                
+                st.markdown("</div>", unsafe_allow_html=True)
             
             else:
+                # No books available - upload only
+                st.markdown("""
+                <div class='glass-card' style='margin: 30px auto; max-width: 700px; text-align: center;'>
+                    <div style='font-size: 4rem; margin-bottom: 20px;'>📤</div>
+                    <h3 style='color: white;'>Chưa có sách cho môn này</h3>
+                    <p style='color: rgba(255,255,255,0.8); font-size: 1.1rem;'>
+                        Hãy upload sách của bạn nhé!
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
                 uploaded_file = st.file_uploader(
-                    "Upload sách (PDF/DOCX):",
+                    "Chọn file sách (PDF/DOCX):",
                     type=["pdf", "docx"],
-                    key="upload_with_repo"
+                    key="upload_only"
                 )
                 
                 if uploaded_file:
-                    with st.spinner(f"📖 Đang đọc {uploaded_file.name}..."):
+                    with st.spinner("📖 Đang xử lý..."):
                         content = doc_file(uploaded_file)
                         
                         if content and len(content) > 100:
                             st.session_state.book_content = content
                             st.session_state.book_name = uploaded_file.name
-                            st.success(f"✅ Đã đọc xong **{uploaded_file.name}** ({len(content):,} ký tự)")
-        
-        else:
-            st.warning(f"⚠️ Chưa có sách sẵn cho môn {subject}. Hãy upload sách!")
+                            st.success(f"✅ Upload thành công!")
+                            st.balloons()
             
-            uploaded_file = st.file_uploader(
-                "Upload sách (PDF/DOCX):",
-                type=["pdf", "docx"],
-                key="upload_no_repo"
-            )
-            
-            if uploaded_file:
-                with st.spinner(f"📖 Đang đọc {uploaded_file.name}..."):
-                    content = doc_file(uploaded_file)
+            # === QUIZ CONFIGURATION (when book is loaded) ===
+            if st.session_state.book_content and len(st.session_state.book_content) > 100:
+                st.markdown("<br><br>", unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div class='glass-card' style='margin: 30px auto; max-width: 900px;'>
+                    <div style='text-align: center; margin-bottom: 20px;'>
+                        <div style='font-size: 3rem;'>📖</div>
+                        <h3 style='color: white;'>{st.session_state.book_name}</h3>
+                        <p style='color: rgba(255,255,255,0.8);'>{len(st.session_state.book_content):,} ký tự</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # === AI RECOMMENDATIONS ===
+                priority_topics = st.session_state.weakness_analyzer.get_priority_topics(top_n=3)
+                
+                if priority_topics:
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(255,193,7,0.3), rgba(255,152,0,0.3)); 
+                                padding: 15px; border-radius: 15px; margin: 20px 0; border: 2px solid rgba(255,193,7,0.5);'>
+                        <div style='text-align: center;'>
+                            <span style='font-size: 2rem;'>💡</span>
+                            <p style='color: white; font-weight: 600; margin: 10px 0;'>
+                                AI gợi ý: Tập trung vào <b>{', '.join(priority_topics)}</b>
+                            </p>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("<h3 style='color: white; text-align: center;'>⚙️ Cấu hình Quiz</h3>", unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # === FOCUS MODE SELECTOR ===
+                st.markdown("<p style='color: white; font-weight: 600; text-align: center;'>🎯 Chọn chế độ học:</p>", unsafe_allow_html=True)
+                
+                focus_modes = [
+                    {"name": "🤖 Thích ứng", "desc": "AI tự động", "mode": "adaptive", "color": "#667eea"},
+                    {"name": "💪 Điểm yếu", "desc": "Tập trung luyện", "mode": "review_weak", "color": "#ff6b6b"},
+                    {"name": "🎲 Tổng hợp", "desc": "Ngẫu nhiên", "mode": "mixed", "color": "#4ecdc4"},
+                    {"name": "🔥 Thử thách", "desc": "Siêu khó", "mode": "challenge", "color": "#f38181"}
+                ]
+                
+                mode_cols = st.columns(4)
+                for idx, mode_info in enumerate(focus_modes):
+                    with mode_cols[idx]:
+                        if st.button(
+                            f"{mode_info['name']}\n{mode_info['desc']}", 
+                            key=f"mode_{idx}",
+                            use_container_width=True
+                        ):
+                            st.session_state.focus_mode = mode_info['mode']
+                
+                # Get current focus mode
+                current_mode_name = next(
+                    (m['name'] for m in focus_modes if m['mode'] == st.session_state.focus_mode),
+                    "🤖 Thích ứng"
+                )
+                
+                st.markdown(f"""
+                <div style='text-align: center; margin: 15px 0;'>
+                    <p style='color: white; font-size: 1.1rem;'>
+                        Đã chọn: <b>{current_mode_name}</b>
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # === CHAPTER & DIFFICULTY ===
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("""
+                    <div style='background: rgba(255,255,255,0.1); padding: 15px; 
+                                border-radius: 15px; border: 2px solid rgba(255,255,255,0.3);'>
+                        <p style='color: white; font-weight: 600; text-align: center; margin-bottom: 10px;'>
+                            📚 Chương
+                        </p>
+                    """, unsafe_allow_html=True)
                     
-                    if content and len(content) > 100:
-                        st.session_state.book_content = content
-                        st.session_state.book_name = uploaded_file.name
-                        st.success(f"✅ Đã đọc xong **{uploaded_file.name}** ({len(content):,} ký tự)")
-        
-        # UI tạo quiz
-        if st.session_state.book_content and len(st.session_state.book_content) > 100:
-            st.markdown("---")
-            st.markdown(f"### 📖 Đang làm việc với: **{st.session_state.book_name}**")
-            
-            # Smart recommendations
-            priority_topics = st.session_state.weakness_analyzer.get_priority_topics(top_n=3)
-            
-            if priority_topics:
-                st.info(f"💡 **AI gợi ý:** Bạn nên tập trung vào: **{', '.join(priority_topics)}**")
-            
-            st.markdown("### ⚙️ Cấu hình Quiz")
-            
-            # Focus mode
-            focus_mode = st.radio(
-                "🎯 Chế độ học:",
-                [
-                    "🤖 Thích ứng (AI tự động)",
-                    "💪 Tập trung điểm yếu",
-                    "🎲 Tổng hợp ngẫu nhiên",
-                    "🔥 Thử thách (Khó)"
-                ],
-                horizontal=True
-            )
-            
-            focus_mode_map = {
-                "🤖 Thích ứng (AI tự động)": "adaptive",
-                "💪 Tập trung điểm yếu": "review_weak",
-                "🎲 Tổng hợp ngẫu nhiên": "mixed",
-                "🔥 Thử thách (Khó)": "challenge"
-            }
-            st.session_state.focus_mode = focus_mode_map[focus_mode]
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                chapter = st.text_input("Nhập số chương (VD: 1, 2, 3) hoặc 'ALL':", "1")
-                st.session_state.current_chapter = chapter
-            
-            with col2:
-                if st.session_state.focus_mode == "challenge":
-                    difficulty = "Hard 😰"
-                    st.info("🔥 Độ khó: **Hard 😰** (Chế độ Thử thách)")
-                else:
-                    difficulty = st.select_slider(
-                        "Chọn độ khó:",
-                        options=["Easy 😊", "Medium 🤔", "Hard 😰", "Expert 💀"],
-                        value="Medium 🤔"
+                    chapter = st.text_input(
+                        "Nhập số chương (1, 2, 3) hoặc 'ALL':",
+                        value="1",
+                        key="chapter_input",
+                        label_visibility="collapsed"
                     )
-                st.session_state.current_difficulty = difficulty
-            
-            num_questions = st.slider("Số câu hỏi:", 5, 20, 10)
-            
-            col_btn1, col_btn2 = st.columns([3, 1])
-            with col_btn1:
-                if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
-                    with st.spinner("🤖 AI đang sinh câu hỏi..."):
-                        try:
-                            quiz = st.session_state.adaptive_engine.generate_adaptive_quiz(
-                                content=st.session_state.book_content,
-                                subject=subject,
-                                chapter=chapter,
-                                num_questions=num_questions,
-                                focus_mode=st.session_state.focus_mode
-                            )
-
-                            if quiz and len(quiz) > 0:
-                                st.session_state.current_quiz = quiz
-                                st.session_state.quiz_active = True
-
-                                st.session_state.current_session_id = (
-                                    st.session_state.history_tracker.create_session(
-                                        subject=subject,
-                                        chapter=chapter,
-                                        difficulty=difficulty
-                                    )
+                    st.session_state.current_chapter = chapter
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown("""
+                    <div style='background: rgba(255,255,255,0.1); padding: 15px; 
+                                border-radius: 15px; border: 2px solid rgba(255,255,255,0.3);'>
+                        <p style='color: white; font-weight: 600; text-align: center; margin-bottom: 10px;'>
+                            ⚡ Độ khó
+                        </p>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.session_state.focus_mode == "challenge":
+                        st.markdown("""
+                        <div style='text-align: center; padding: 10px;'>
+                            <p style='color: #ff6b6b; font-size: 1.2rem; font-weight: 700;'>
+                                🔥 Hard (Chế độ Thử thách)
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        difficulty = "Hard 😰"
+                    else:
+                        difficulty = st.select_slider(
+                            "Chọn độ khó:",
+                            options=["Easy 😊", "Medium 🤔", "Hard 😰", "Expert 💀"],
+                            value="Medium 🤔",
+                            label_visibility="collapsed"
+                        )
+                    
+                    st.session_state.current_difficulty = difficulty
+                    st.markdown("</div>", unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # === NUMBER OF QUESTIONS ===
+                st.markdown("""
+                <div style='background: rgba(255,255,255,0.1); padding: 20px; 
+                            border-radius: 15px; border: 2px solid rgba(255,255,255,0.3); margin: 20px 0;'>
+                    <p style='color: white; font-weight: 600; text-align: center; margin-bottom: 15px;'>
+                        🎯 Số câu hỏi
+                    </p>
+                """, unsafe_allow_html=True)
+                
+                num_questions = st.slider(
+                    "Chọn số câu:",
+                    min_value=5,
+                    max_value=20,
+                    value=10,
+                    key="num_q",
+                    label_visibility="collapsed"
+                )
+                
+                st.markdown(f"""
+                <div style='text-align: center;'>
+                    <p style='color: white; font-size: 1.5rem; font-weight: 700;'>
+                        {num_questions} câu hỏi
+                    </p>
+                </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # === ACTION BUTTONS ===
+                btn_col1, btn_col2 = st.columns([3, 1])
+                
+                with btn_col1:
+                    if st.button("🎮 TẠO QUIZ NGAY!", type="primary", use_container_width=True):
+                        with st.spinner("🤖 AI đang sinh câu hỏi... ✨"):
+                            # Add progress animation
+                            progress_bar = st.progress(0)
+                            for i in range(100):
+                                time.sleep(0.01)
+                                progress_bar.progress(i + 1)
+                            
+                            try:
+                                quiz = st.session_state.adaptive_engine.generate_adaptive_quiz(
+                                    content=st.session_state.book_content,
+                                    subject=selected_subject,
+                                    chapter=chapter,
+                                    num_questions=num_questions,
+                                    focus_mode=st.session_state.focus_mode
                                 )
-
-                                st.rerun()
-
-                            else:
-                                st.warning("Không tạo được câu hỏi nào. Vui lòng thử lại hoặc chọn chương khác.")
-
-                        except Exception as e:
-                            st.error(f"❌ Lỗi khi tạo quiz: {str(e)}")
-                            # Optional: hiện traceback nếu bạn đang debug
-                            # import traceback
-                            # st.error(traceback.format_exc())
-
-            with col_btn2:
-                if st.button("🗑️ Đổi sách", use_container_width=True):
-                    st.session_state.book_content = None
-                    st.session_state.book_name = ""
-                    st.rerun()
-
-    # ===== CHALLENGE MODE =====
-    elif st.session_state.mode == "challenge":
-        st.markdown("## ⚔️ Đấu Trường Tri Thức")
-        st.info("🚧 Coming Soon!")
+                                
+                                if quiz and len(quiz) > 0:
+                                    st.session_state.current_quiz = quiz
+                                    st.session_state.quiz_active = True
+                                    st.session_state.current_question = 0
+                                    st.session_state.score = 0
+                                    st.session_state.answers = []
+                                    
+                                    st.session_state.current_session_id = (
+                                        st.session_state.history_tracker.create_session(
+                                            subject=selected_subject,
+                                            chapter=chapter,
+                                            difficulty=difficulty
+                                        )
+                                    )
+                                    
+                                    st.success("✅ Quiz đã sẵn sàng!")
+                                    st.balloons()
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.warning("⚠️ Không tạo được câu hỏi. Thử lại nhé!")
+                            
+                            except Exception as e:
+                                st.error(f"❌ Lỗi: {str(e)}")
+                                
+                                # Fallback
+                                st.warning("🔄 Đang dùng chế độ dự phòng...")
+                                quiz = st.session_state.quiz_engine.generate_quiz(
+                                    content=st.session_state.book_content,
+                                    subject=selected_subject,
+                                    chapter=chapter,
+                                    difficulty=difficulty,
+                                    num_questions=num_questions
+                                )
+                                
+                                if quiz:
+                                    st.session_state.current_quiz = quiz
+                                    st.session_state.quiz_active = True
+                                    st.session_state.current_question = 0
+                                    st.session_state.score = 0
+                                    st.session_state.answers = []
+                                    
+                                    st.session_state.current_session_id = (
+                                        st.session_state.history_tracker.create_session(
+                                            subject=selected_subject,
+                                            chapter=chapter,
+                                            difficulty=difficulty
+                                        )
+                                    )
+                                    st.rerun()
+                
+                with btn_col2:
+                    if st.button("🗑️ Đổi sách", use_container_width=True):
+                        st.session_state.book_content = None
+                        st.session_state.book_name = ""
+                        st.rerun()
+                
+                st.markdown("</div>", unsafe_allow_html=True)
     
+    # === CHALLENGE MODE ===
+    elif st.session_state.mode == "challenge":
+        st.markdown("""
+        <div class='glass-card' style='margin: 50px auto; max-width: 800px; text-align: center;'>
+            <div style='font-size: 5rem; margin-bottom: 20px;'>⚔️</div>
+            <h2 style='color: white;'>Đấu Trường Tri Thức</h2>
+            <p style='color: rgba(255,255,255,0.8); font-size: 1.2rem; margin: 20px 0;'>
+                🚧 Tính năng đang được phát triển...
+            </p>
+            <p style='color: rgba(255,255,255,0.7);'>
+                Sắp có: Boss Battles, Leaderboard, Multiplayer! 🎮
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         if st.button("🏠 Quay lại", use_container_width=True):
             st.session_state.mode = None
             st.rerun()
-            
-# ===== FOOTER =====
-st.markdown("---")
+
+# ===== BEAUTIFUL FOOTER =====
+st.markdown("<br><br>", unsafe_allow_html=True)
 st.markdown("""
-<div style='text-align: center; color: white; padding: 20px;'>
-    <p>🎓 <b>SmartKid Arena</b> - Powered by AI (Gemini, Grok, DeepSeek)</p>
-    <p style='font-size: 12px;'>Học mà như chơi game | Adaptive Learning System</p>
+<div style='text-align: center; padding: 30px; margin-top: 50px;'>
+    <div style='font-size: 2rem; margin-bottom: 10px;'>
+        <span class='emoji-bounce'>🎓</span>
+    </div>
+    <p style='color: white; font-weight: 700; font-size: 1.2rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);'>
+        SmartKid Arena
+    </p>
+    <p style='color: rgba(255,255,255,0.8); font-size: 0.9rem;'>
+        Powered by AI • Học mà như chơi game ✨
+    </p>
 </div>
 """, unsafe_allow_html=True)
