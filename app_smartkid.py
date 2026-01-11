@@ -1017,14 +1017,19 @@ else:
                                     st.session_state.score = 0
                                     st.session_state.answers = []
                                     
-                                    st.session_state.current_session_id = (
-                                        st.session_state.history_tracker.create_session(
+                                    # Thay thế đoạn code cũ bằng:
+                                    tracker = st.session_state.get('history_tracker')  # an toàn, không raise error nếu không tồn tại
+
+                                    if tracker is not None:
+                                        st.session_state.current_session_id = tracker.create_session(
                                             subject=selected_subject,
                                             chapter=chapter,
                                             difficulty=difficulty
                                         )
-                                    )
-                                    st.rerun()
+                                    else:
+                                        st.warning("⚠️ Bộ theo dõi lịch sử chưa được khởi tạo. Quiz vẫn chạy nhưng không lưu lịch sử.")
+                                        st.session_state.current_session_id = f"temp_{uuid.uuid4().hex[:8]}"  # fake tạm thời
+    
                 
                 with btn_col2:
                     if st.button("🗑️ Đổi sách", use_container_width=True):
